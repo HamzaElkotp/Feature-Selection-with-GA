@@ -9,8 +9,7 @@ setup(
         "pandas",
         "pygad",
         "ttkbootstrap",
-        "ttkbootstrap-icons",
-        "pydantic"
+        "ttkbootstrap-icons"
     ],
     entry_points={
         "console_scripts": [
