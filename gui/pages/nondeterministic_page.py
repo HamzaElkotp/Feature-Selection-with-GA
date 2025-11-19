@@ -1,4 +1,7 @@
+import json
 import ttkbootstrap as ttk
+
+from core.controller import InputController
 
 
 class NonDeterministicPage(ttk.Frame):
@@ -27,5 +30,24 @@ class NonDeterministicPage(ttk.Frame):
         # Pass info to controller or InputPage
         self.master.show_input_page(mode="nondeterministic", extra_data={
             "termination_condition": self.termination_var.get(),
-            "dataset": self.dataset_var.get()
+            "dataset_path": self.dataset_var.get()
         })
+
+        ctx = self.master.app_context
+        dataset_path = ctx.dataset_path
+        mode = ctx.mode
+
+        data = {
+            "mode":mode,
+            "dataset_path": dataset_path,
+            "select_method": "Roulette",
+            "cross_method": "Uniform",
+            "mutation_method": "Swap",
+            "elitism_percent": self.elitism_var.get(),
+            "mutation_percent": self.mutation_var.get(),
+            "alpha": self.alpha_var.get(),
+            "beta": self.beta_var.get()
+        }
+        json_data = json.dumps(data)
+        controller = InputController(gui_context=self.master)
+        controller.handle_user_input(json_data)

@@ -22,8 +22,13 @@ class InputPage(ttk.Frame):
 
     def on_run(self):
         
+        ctx = self.master.app_context
+        dataset_path = ctx.dataset_path
+        mode = ctx.mode
+
         data = {
-            "mode": self.mode_var.get(),
+            "mode":mode,
+            "dataset_path": dataset_path,
             "select_method": "Roulette",
             "cross_method": "Uniform",
             "mutation_method": "Swap",

@@ -2,7 +2,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 
 
-def validate_float_spinbox(proposed_value, spinbox_widget, var, min_, max_):
+def _validate_float_spinbox(proposed_value, spinbox_widget, var, min_, max_):
     """
     Validates and updates the background color of the spinbox.
     - proposed_value: the text currently in the widget
@@ -54,7 +54,7 @@ def numeric_spinbox(parent, var, min_=0.0, max_=100.0, step=1.0,
     )
 
     # register validation command (pass the spinbox instance)
-    vcmd = (frame.register(lambda p: validate_float_spinbox(p, spin, var, min_, max_)), "%P")
+    vcmd = (frame.register(lambda p: _validate_float_spinbox(p, spin, var, min_, max_)), "%P")
     spin.configure(validate="key", validatecommand=vcmd)
     spin.pack(side="left")
 

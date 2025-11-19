@@ -1,14 +1,18 @@
-import json, threading
+# core/controller.py
+import json
+import threading
 from tkinter import messagebox
 from core.models import DeterministicInputConfig
 from core.validators import validate_config
+from core.ga_runner import GeneticAlgorithm
+
 
 class InputController:
     def __init__(self, gui_context):
         self.gui_context = gui_context
         self.ga = None
 
-    def handle_user_input(self, json_input, observers=None):
+    def handle_user_input(self, json_input):
         try:
             data = json.loads(json_input)
             config = DeterministicInputConfig(**data)
@@ -17,17 +21,22 @@ class InputController:
             messagebox.showerror("Config Error", str(e))
             return
 
-        #self.ga = GeneticAlgorithm(config)
-        if observers:
-            for o in observers:
-                self.ga.attach(o)
+        # Instantiate GA and attach observers
+        self.ga = GeneticAlgorithm(config)
 
-        if hasattr(self.gui_context, "show_wait_page"):
-            self.gui_context.show_wait_page()
+        # Show the Wait Page FIRST
+        self.gui_context.show_wait_page()
 
-        threading.Thread(target=self.run_ga, daemon=True).start()
-        
+        # The Wait Page itself becomes an observer
+        wait_page = self.gui_context._current_page
+        self.ga.attach(wait_page)
+
+        # Run GA in background thread
+        thread = threading.Thread(target=self.run_ga, daemon=True)
+        thread.start()
 
     def run_ga(self):
         results = self.ga.run()
+
+        # After final completion, trigger Results Page
         self.gui_context.after(0, self.gui_context.show_results_page, results)

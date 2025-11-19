@@ -10,7 +10,8 @@ setup(
         "pygad",
         "ttkbootstrap",
         "ttkbootstrap-icons",
-        "pydantic"
+        "pydantic",
+        "pathlib"
     ],
     entry_points={
         "console_scripts": [
