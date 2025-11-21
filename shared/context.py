@@ -11,7 +11,7 @@ class AppContext:
     dataset_path: Optional[Path] = None        # path to CSV or dataset file
     extra_data: Dict[str, Any] = field(default_factory=dict)
 
-    # Convenience method for validation or debugging
+    # for validation or debugging
     def summary(self):
         return {
             "mode": self.mode,

@@ -13,7 +13,7 @@ class StartPage(ttk.Frame):
 
         # ----------------------------------------------------------------------
         # Dataset path entry + inline error label
-        self.dataset_var = ttk.StringVar(value="")
+        self.dataset_var = ttk.StringVar(value="/home/ahmed/Downloads/20230044-Sheet1.pdf")
         self.dataset_entry = ttk.Entry(self, textvariable=self.dataset_var, width=60)
         self.dataset_entry.pack(side="top", pady=5)
 
@@ -56,7 +56,7 @@ class StartPage(ttk.Frame):
         )
 
         if path:
-            # 🔹 use validator from shared/validators.py
+            # validator from shared/validators.py
             is_valid, msg = validate_dataset_path_inline(path)
             if not is_valid:
                 self.dataset_entry.configure(bootstyle="danger")

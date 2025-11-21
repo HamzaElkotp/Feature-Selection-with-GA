@@ -33,7 +33,7 @@ class Application(ttk.Window):
 
     def show_input_page(self, mode="deterministic"):
         self.app_context.mode = mode
-        print("App Context:", self.app_context.summary())  # optional debug
+        #print("App Context:", self.app_context.summary())  # optional debug
         self._switch_page(InputPage)
 
     def show_nondeterministic_page(self):

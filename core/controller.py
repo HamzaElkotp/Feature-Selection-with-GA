@@ -2,7 +2,7 @@
 import json
 import threading
 from tkinter import messagebox
-from core.models import DeterministicInputConfig
+from core.models import InputConfig
 from core.validators import validate_config
 from core.ga_runner import GeneticAlgorithm
 
@@ -15,7 +15,7 @@ class InputController:
     def handle_user_input(self, json_input):
         try:
             data = json.loads(json_input)
-            config = DeterministicInputConfig(**data)
+            config = InputConfig(**data)
             validate_config(config)
         except Exception as e:
             messagebox.showerror("Config Error", str(e))
