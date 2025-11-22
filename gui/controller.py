@@ -2,9 +2,9 @@
 import json
 import threading
 from tkinter import messagebox
-from core.models import InputConfig
-from core.validators import validate_config
-from core.ga_runner import GeneticAlgorithm
+from gui.models import InputConfig
+from gui.utils.validator import validate_config
+from gui.ga_runner import GeneticAlgorithm
 
 
 class InputController:

@@ -1,7 +1,7 @@
 import json
 import ttkbootstrap as ttk
 
-from core.controller import InputController
+from gui.controller import InputController
 
 
 class NonDeterministicPage(ttk.Frame):

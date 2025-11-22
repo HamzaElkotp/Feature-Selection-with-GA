@@ -1,11 +1,10 @@
-# gui/pages/start_page.py
 import ttkbootstrap as ttk
 from tkinter import filedialog
 from pathlib import Path
-from core.validators import validate_dataset_path_inline
-
+from gui.utils.validator import validate_dataset_path_inline
 
 class StartPage(ttk.Frame):
+
     def __init__(self, master):
         super().__init__(master)
 
@@ -13,7 +12,7 @@ class StartPage(ttk.Frame):
 
         # ----------------------------------------------------------------------
         # Dataset path entry + inline error label
-        self.dataset_var = ttk.StringVar(value="/home/ahmed/Downloads/20230044-Sheet1.pdf")
+        self.dataset_var = ttk.StringVar(value="")
         self.dataset_entry = ttk.Entry(self, textvariable=self.dataset_var, width=60)
         self.dataset_entry.pack(side="top", pady=5)
 
@@ -31,8 +30,8 @@ class StartPage(ttk.Frame):
                    command=self._on_nondeterministic).pack(pady=5)
 
         # validate on focus-out (manual typing)
-        vcmd = (self.register(self._validate_inline), "%P")
-        self.dataset_entry.configure(validate="focusout", validatecommand=vcmd)
+        validate_cmd = (self.register(self._validate_inline), "%P")
+        self.dataset_entry.configure(validate="focusout", validatecommand=validate_cmd)
 
     # --------------------------------------------------------------------------
     def _validate_inline(self, proposed_value: str):
@@ -44,7 +43,7 @@ class StartPage(ttk.Frame):
         else:
             self.dataset_entry.configure(bootstyle="default")
             self.error_label.config(text="")
-        return True
+        return is_valid
 
     # --------------------------------------------------------------------------
     def _select_file(self):
@@ -56,7 +55,7 @@ class StartPage(ttk.Frame):
         )
 
         if path:
-            # validator from shared/validators.py
+            # validator from shared/validator.py
             is_valid, msg = validate_dataset_path_inline(path)
             if not is_valid:
                 self.dataset_entry.configure(bootstyle="danger")

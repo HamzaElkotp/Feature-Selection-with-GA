@@ -1,4 +1,6 @@
 import ttkbootstrap as ttk
+
+from interfaces.api_contract import GAInterface
 from shared.context import AppContext
 from gui.pages.start_page import StartPage
 from gui.pages.input_page import InputPage
@@ -8,10 +10,13 @@ from gui.pages.results_page import ResultsPage
 
 
 class Application(ttk.Window):
-    def __init__(self):
+    def __init__(self, ga_service: GAInterface):
         super().__init__(themename="darkly")
-        self.title("Feature Selection with GA")
+        self.title("Feature Selection for DTs Using GA")
         self.geometry("800x500")
+
+        # The passed ga_service will work fine as long as it implements the GAInterface
+        self.ga_service = ga_service
 
         # ----- Shared dataclass instance -----
         self.app_context = AppContext()
@@ -48,5 +53,5 @@ class Application(ttk.Window):
         """Show GA results page."""
         self._switch_page(ResultsPage, results=results)       
 
-if __name__ == "__main__":
-    Application()
+# if __name__ == "__main__":
+#     Application()

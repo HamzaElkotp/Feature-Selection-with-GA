@@ -1,5 +1,5 @@
 import json, tkinter as tk, ttkbootstrap as ttk
-from core.controller import InputController
+from gui.controller import InputController
 from gui.components.widgets import numeric_spinbox
 
 class InputPage(ttk.Frame):
