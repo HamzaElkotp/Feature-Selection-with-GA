@@ -26,6 +26,12 @@ class NonDeterministicPage(ttk.Frame):
             command=self._continue
         ).grid(row=3, column=0, columnspan=2, pady=15)
 
+        ttk.Button(
+            self, 
+            text="Back to Start", 
+            command=self.master.show_start_page
+        ).grid(row=9, column=0,padx=10, pady=5, sticky="w")
+
     def _continue(self):
         # Pass info to controller or InputPage
         '''self.master.show_input_page(mode="nondeterministic", extra_data={
@@ -34,13 +40,14 @@ class NonDeterministicPage(ttk.Frame):
         })'''
 
         ctx = self.master.app_context
-        dataset_path = str(ctx.dataset_path)
+        dataset_path = ctx.dataset_path
         mode = ctx.mode
 
         data = {
             "mode":mode,
             "termination_condition": str(self.termination_var),
-            "dataset_path": dataset_path,
+            "dataset_path": str(dataset_path),
+            
             #"select_method": "Roulette",
             #"cross_method": "Uniform",
             #"mutation_method": "Swap",
