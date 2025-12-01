@@ -1,16 +1,16 @@
 from interfaces.api_contract import GAInterface
 from interfaces.types import *
-from typing import List
+from typing import List, Optional, Callable
 import random
 import time
 
 
 class MockGAService(GAInterface):
 
-    def run_ga(self, parms: RunGAParameters) -> RunGAResult:
+    def run_ga(self, parms: RunGAParameters, on_complete: Optional[Callable[[RunGAResult], None]] = None) -> None:
         """
         Mock implementation of the GA algorithm.
-        Returns dummy data so the GUI can be developed and tested.
+        Calls `on_complete(result)` when finished if the callback is provided.
         """
 
         # Simulate computation time (optional)
@@ -47,4 +47,10 @@ class MockGAService(GAInterface):
         result.best_genome = best_genome
         result.generations = generations
 
-        return result
+        # Signal completion via callback if provided
+        if on_complete:
+            try:
+                on_complete(result)
+            except Exception:
+                # Swallow exceptions from callback to avoid crashing the GA thread
+                pass

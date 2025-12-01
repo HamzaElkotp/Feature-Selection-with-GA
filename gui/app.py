@@ -11,7 +11,7 @@ from gui.pages.results_page import ResultsPage
 
 class Application(ttk.Window):
     def __init__(self, ga_service: GAInterface):
-        super().__init__(themename="darkly")
+        super().__init__(themename="solar")
         self.title("Feature Selection for DTs Using GA")
         self.geometry("800x500")
 

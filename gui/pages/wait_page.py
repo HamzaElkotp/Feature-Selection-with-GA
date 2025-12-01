@@ -16,14 +16,14 @@ class WaitPage(ttk.Frame):
         ttk.Label(self, textvariable=self.status_text).pack(pady=5)
 
     def update(self, event_type, data):
-        """Called automatically by the GA via observer pattern."""
-        if event_type == "progress":
-            gen = data["generation"]
-            fit = data["fitness"]
-            self.status_text.set(f"Generation {gen}: current best fitness = {fit:.2f}")
-        elif event_type == "complete":
-            # Optionally stop animation when complete
-            self.progress.stop()
-            self.status_text.set("GA complete. Preparing results...")
+        """Left intentionally blank: observer pattern removed.
 
-            # At this point, we rely on controller to trigger results page
+        The GUI no longer expects the GA service to push progress updates
+        via an observer. Completion is handled by the controller when the
+        GA calls the provided completion callback. If needed, use
+        `set_status(text)` to change the status string from the UI thread.
+        """
+
+    def set_status(self, text: str):
+        """Set the status label text (call from UI thread)."""
+        self.status_text.set(text)

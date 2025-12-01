@@ -3,6 +3,9 @@ from gui.controller import InputController
 from gui.components.widgets import numeric_spinbox
 from gui.components.widgets import dropdown_combobox
 
+from interfaces.enums import RunMode, SelectionMethod, CrossoverMethod, MutationMethod, TerminationCondition
+from interfaces.types import GAParameters, RunGAParameters
+
 class InputPage(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
@@ -57,23 +60,56 @@ class InputPage(ttk.Frame):
         ttk.Button(self, text="Back to Start", command=self.master.show_start_page).grid(row=9, column=0,padx=10, pady=5, sticky="w")
 
     def on_run(self):
-        
-        ctx = self.master.app_context
-        dataset_path = str(ctx.dataset_path)
-        mode = ctx.mode
+        context = self.master.app_context
+        dataset_path = str(context.dataset_path) if context.dataset_path else ""
 
-        data = {
-            "mode":mode,
-            "dataset_path": dataset_path,
-            "termination_condition": str(self.termination_condition),
-            "select_method": str(self.select_method_var),
-            "cross_method": str(self.cross_method_var),
-            "mutation_method": str(self.mutation_method_var),
-            "elitism_percent": self.elitism_var.get(),
-            "mutation_percent": self.mutation_var.get(),
-            "alpha": self.alpha_var.get(),
-            "beta": self.beta_var.get()
+        # map UI labels to Enums
+        select_map = {
+            "Roulette": SelectionMethod.ROULETTE,
+            "Rank": SelectionMethod.RANKING,
+            "Tournament": SelectionMethod.TOURNAMENT,
         }
-        json_data = json.dumps(data)
+        cross_map = {
+            "Uniform": CrossoverMethod.MULTI_POINT,
+            "Single Point": CrossoverMethod.SINGLE_POINT,
+            "Two Point": CrossoverMethod.MULTI_POINT,
+        }
+        mutation_map = {
+            "Swap": MutationMethod.BIT_FLIP,
+            "Scramble": MutationMethod.INVERSION,
+            "Inversion": MutationMethod.INVERSION,
+        }
+        term_map = {
+            "Max Generations": TerminationCondition.AFTER_N_GENERATIONS,
+            "Score Threshold": TerminationCondition.AFTER_FITNESS_REACHES_N,
+            "Convergence": TerminationCondition.NO_IMPROVEMENT_SINCE_N_GENERATIONS,
+        }
+
+        sel_enum = select_map.get(self.select_method_var.get(), SelectionMethod.ROULETTE)
+        cross_enum = cross_map.get(self.cross_method_var.get(), CrossoverMethod.MULTI_POINT)
+        mut_enum = mutation_map.get(self.mutation_method_var.get(), MutationMethod.BIT_FLIP)
+        term_enum = term_map.get(self.termination_condition.get(), TerminationCondition.AFTER_N_GENERATIONS)
+
+        ga_params = GAParameters(
+            selection_method=sel_enum,
+            crossover_method=cross_enum,
+            mutation_method=mut_enum,
+            termination_condition=term_enum,
+            termination_condition_n=0.0,
+            elitism_percent=self.elitism_var.get(),
+            mutation_percent=self.mutation_var.get(),
+            alpha=self.alpha_var.get(),
+            beta=self.beta_var.get(),
+        )
+
+        run_params = RunGAParameters(
+            dataset_file_path=dataset_path,
+            mode=RunMode.DIM,
+            ga_parameters=ga_params,
+        )
+
+        # store typed params in app context for later inspection
+        context.ga_parameters = ga_params
+
         controller = InputController(gui_context=self.master)
-        controller.handle_user_input(json_data)
+        controller.handle_user_input(run_params)
