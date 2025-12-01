@@ -292,3 +292,39 @@ print(selected)
 ###################################################################################################################
 ###################################################################################################################
 ###################################################################################################################
+
+############## Cross over methods #############
+## First : single point crossover
+
+def single_point_crossover(p1, p2):
+    """
+    Perform single-point crossover between two parent chromosomes.
+    Assumes both parents are sequences of the same length.
+    """
+    chromo_len = len(p1)
+    # Choose a crossover point between 1 and chromo_len-1 (inclusive)
+    r = random.sample(1, chromo_len - 1)
+    offspring1 = p1[:r] + p2[r:]
+    offspring2 = p2[:r] + p1[r:]
+    return offspring1, offspring2
+
+##  Second : Two point crossover
+
+def Two_point_crossover(p1, p2):
+    """
+    Perform single-point crossover between two parent chromosomes.
+    Assumes both parents are sequences of the same length.
+    """
+    chromo_len = len(p1)
+    # Choose a crossover point between 1 and chromo_len-1 (inclusive)
+    r1 = random.sample(range(1, chromo_len - 1), k=1)
+    r2 = random.sample(range(1, chromo_len - 1), k=1)
+    if (r1>r2):
+        offspring1 = p1[:r2] + p2[r2:r1] + p1[r1:]
+        offspring2 = p2[:r2] + p1[r2:r1] + p2[r1:]
+    else:
+        offspring1 = p1[:r1] + p2[r1:r2] + p1[r2:]
+        offspring2 = p2[:r1] + p1[r1:r2] + p2[r2:]
+    
+    return offspring1, offspring2
+
