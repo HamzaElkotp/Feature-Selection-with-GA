@@ -10,10 +10,19 @@ import array
 # num_features is the number of features in the dataset
 # size is the size of the chromosome (the number of bits in the chromosome)
 # the function gets num_features as an input and returns a random array of binary bits (0,1)
+# Returns tuple instead of np object to be able to pass the chromosome to the validate function
 
-def create_bitstring_chromosome(num_features: int) :
-    chromosome = np.random.randint(2, size=num_features)#randint is a function that generates random integers between 0 and 1 from numpy library
-    return chromosome
+def create_bitstring_chromosome(num_features: int) -> tuple:
+    return tuple(np.random.randint(2, size=num_features)) #randint is a function that generates random integers between 0 and 1 from numpy library
+
+
+# validate the chromosome based on some criteria, and then return true if valid, and false if invalid chromosome
+def validate_bitstring_chromosome(chromosome:tuple) -> bool :
+    selected_indices = chromosome.count(1)
+    if selected_indices == 0: # check if chromosome has no ones eg: [0 0 0 0]
+        return False
+    return True
+
 
 # -> a fun population  return array of random chromosomes 
 
@@ -25,10 +34,23 @@ def create_bitstring_chromosome(num_features: int) :
 # the function uses a list comprehension to create a list of random chromosomes
 # the function uses the create_bitstring_chromosome function to create each chromosome
 # the function returns a list of random chromosomes
- 
+# returns an array of valid unique chromosomes
 
 def initialize_population(population_size: int , num_features: int):
-    return [create_bitstring_chromosome(num_features) for _ in range(population_size)]# the function uses a list comprehension to create a list of random chromosomes
+    if (population_size < 2):
+        raise ValueError("population_size must be at least 2")
+    if (population_size >= pow(2, num_features)):
+        raise ValueError("population_size must be less than 2^num_features.")
+    if (num_features < 2):
+        raise ValueError("num_features must be at least 2")
+
+    population = set()
+    while len(population) < population_size: # generate chromosomes until generate the full population with only unique valid chromosomes
+        chromosome = create_bitstring_chromosome(num_features)
+        if validate_bitstring_chromosome(chromosome): # validate chromosome
+            population.add(chromosome)
+    return [np.array(c) for c in population] # the function uses a list comprehension to create a list of random chromosomes
+
 
 # the function returns a list of random chromosomes (n number of chromosomes = 20 which is the population size and each chromosome is an array of binary bits (0,1) of size 12 which is the number of features in the dataset)
 # the function uses a list comprehension to create a list of random chromosomes
@@ -53,7 +75,7 @@ from sklearn.tree import DecisionTreeClassifier
 # fitness=accuracy*alpha−Beta⋅( Features_selected / Features_total  ) 
 #Fitness Function for One Chromosome
 
-def compute_fitness(chromosome, Dataset_features, prediction_target, alpha=1,  Beta=1):
+def compute_fitness(chromosome, Dataset_features, prediction_target, alpha=1, Beta=1):
     """
     Compute fitness for one chromosome.
     chromosome: 0/1 numpy array
