@@ -65,11 +65,29 @@ for chromo in population:
 from sklearn.model_selection import cross_val_score
 from sklearn.tree import DecisionTreeClassifier
 
+
+# the function uses the np.where function to get the indices of the selected features
+# the function uses the cross_val_score function to get the accuracy of the model
+# This function computes the accuracy of the model after trained with the selected features
+def compute_accuracy(chromosome, Dataset_features, prediction_target) -> np.floating:
+    selected_indices = np.where(chromosome == 1)[0]  # the function uses the np.where function to get the indices of the selected features
+
+    #  Use .iloc for integer-location based indexing with pandas DataFrames
+    Dataset_features_selected = Dataset_features.iloc[:, selected_indices]  # the function uses the np.where function to get the indices of the selected features
+
+    model = DecisionTreeClassifier()  # the function uses the DecisionTreeClassifier function to create a decision tree model
+
+    # Accuracy using cross-validation
+    accuracy = np.mean(cross_val_score(model, Dataset_features_selected, prediction_target, cv=3))
+    # the function uses the cross_val_score function to get the accuracy of the model
+
+    return accuracy
+
+
 #-> a fun fitness return one chromosome fitness 
 # the function gets chromosome, Dataset_features, prediction_target, Beta as an input and returns the fitness of the chromosome
 # the function uses the np.where function to get the indices of the selected features
 # the function uses the len function to get the number of selected features
-# the function uses the cross_val_score function to get the accuracy of the model
 # the function returns the fitness of the chromosome
 # fitness formula:
 # fitness=accuracy*alpha−Beta⋅( Features_selected / Features_total  ) 
@@ -83,29 +101,21 @@ def compute_fitness(chromosome, Dataset_features, prediction_target, alpha=1, Be
     prediction_target: prediction target
     penalty: penalty for the fitness = Beta * (Features_selected / Features_total)
     """
-    selected_indices = np.where(chromosome == 1)[0]# the function uses the np.where function to get the indices of the selected features
 
-
-    # check if no feature selected 
-    if len(selected_indices) == 0:# the function uses the len function to get the number of selected features
-        return 0.0# if no feature selected, the fitness is 0
-     
-     #  Use .iloc for integer-location based indexing with pandas DataFrames
-    Dataset_features_selected = Dataset_features.iloc[:, selected_indices]# the function uses the np.where function to get the indices of the selected features
-    # Model
-    model = DecisionTreeClassifier()# the function uses the DecisionTreeClassifier function to create a decision tree model
-
-    # Accuracy using cross-validation
-    # the function uses the cross_val_score function to get the accuracy of the model
-    accuracy = np.mean(cross_val_score(model, Dataset_features_selected, prediction_target, cv=3))
+    selected_indices = np.where(chromosome == 1)[0]
+    accuracy = compute_accuracy(chromosome, Dataset_features, prediction_target);
 
     # Penalty
-    Features_total = len(chromosome) #  = len(Dataset_features)
+    Features_total = len(chromosome)  # = len(Dataset_features)
     Features_selected = len(selected_indices)
     penalty = Beta * (Features_selected / Features_total)
 
-    fitness_value = (alpha * accuracy) - penalty
+    # Reward
+    reward = alpha * accuracy
+
+    fitness_value = reward - penalty
     return fitness_value
+
 
 # Function to Calculate Fitness for Whole Population
 # Returns a List of chromosome and value of each fitness for this chromosome
