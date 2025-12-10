@@ -145,14 +145,14 @@ def get_population_fitness(_population, dataset_features, prediction_target, alp
     """
         Returns a list of fitness values for each chromosome in the population.
     """
-    population_with_fitenss:Population = []
+    population_with_fitness:Population = []
 
     for chromosome in _population:
         fitness = compute_fitness(chromosome, Dataset_features, prediction_target, alpha, beta)
         chromosome = Chromosome(bit_string=chromosome, fitness=fitness)
-        population_with_fitenss.append(chromosome)
+        population_with_fitness.append(chromosome)
 
-    sorted_population = Descending_order_fitnesses(population_with_fitenss)
+    sorted_population = Descending_order_fitnesses(population_with_fitness)
 
     return sorted_population
 
