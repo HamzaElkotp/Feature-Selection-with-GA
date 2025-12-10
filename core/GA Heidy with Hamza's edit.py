@@ -12,7 +12,7 @@ class Chromosome(TypedDict):
     bit_string: np.int64
     fitness: float
     
-Population: List[Chromosome]
+Population = List[Chromosome]
 
 class Generation(TypedDict):
     average_fitness: float
