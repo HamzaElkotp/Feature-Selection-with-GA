@@ -5,6 +5,17 @@ from re import S
 import numpy as np
 import array
 
+from typing import TypedDict
+class Chromosome(TypedDict):
+    bit_string: np.int64
+    fitness: float
+
+class Generation(TypedDict):
+    average_fitness: float
+    best_chromosome: Chromosome
+    worst_chromosome: Chromosome
+
+
 # -> a fun chromosome return array of random binary bits (0,1)
 # create an initial random array (chromosome) of size num
 # num_features is the number of features in the dataset
@@ -69,16 +80,16 @@ from sklearn.tree import DecisionTreeClassifier
 # the function uses the np.where function to get the indices of the selected features
 # the function uses the cross_val_score function to get the accuracy of the model
 # This function computes the accuracy of the model after trained with the selected features
-def compute_accuracy(chromosome, Dataset_features, prediction_target) -> np.floating:
+def compute_accuracy(chromosome, dataset_features, prediction_target) -> np.floating:
     selected_indices = np.where(chromosome == 1)[0]  # the function uses the np.where function to get the indices of the selected features
 
     #  Use .iloc for integer-location based indexing with pandas DataFrames
-    Dataset_features_selected = Dataset_features.iloc[:, selected_indices]  # the function uses the np.where function to get the indices of the selected features
+    dataset_features_selected = dataset_features.iloc[:, selected_indices]  # the function uses the np.where function to get the indices of the selected features
 
     model = DecisionTreeClassifier()  # the function uses the DecisionTreeClassifier function to create a decision tree model
 
     # Accuracy using cross-validation
-    accuracy = np.mean(cross_val_score(model, Dataset_features_selected, prediction_target, cv=3))
+    accuracy = np.mean(cross_val_score(model, dataset_features_selected, prediction_target, cv=3))
     # the function uses the cross_val_score function to get the accuracy of the model
 
     return accuracy
@@ -93,7 +104,7 @@ def compute_accuracy(chromosome, Dataset_features, prediction_target) -> np.floa
 # fitness=accuracy*alpha−Beta⋅( Features_selected / Features_total  ) 
 #Fitness Function for One Chromosome
 
-def compute_fitness(chromosome, Dataset_features, prediction_target, alpha=1, Beta=1):
+def compute_fitness(chromosome, dataset_features, prediction_target, alpha=1, beta=1) -> float:
     """
     Compute fitness for one chromosome.
     chromosome: 0/1 numpy array
@@ -103,17 +114,17 @@ def compute_fitness(chromosome, Dataset_features, prediction_target, alpha=1, Be
     """
 
     selected_indices = np.where(chromosome == 1)[0]
-    accuracy = compute_accuracy(chromosome, Dataset_features, prediction_target);
+    accuracy = compute_accuracy(chromosome, dataset_features, prediction_target)
 
     # Penalty
-    Features_total = len(chromosome)  # = len(Dataset_features)
-    Features_selected = len(selected_indices)
-    penalty = Beta * (Features_selected / Features_total)
+    features_total = len(chromosome)  # = len(Dataset_features)
+    features_selected = len(selected_indices)
+    penalty = beta * (features_selected / features_total)
 
     # Reward
     reward = alpha * accuracy
 
-    fitness_value = reward - penalty
+    fitness_value:float = float(reward - penalty)
     return fitness_value
 
 
@@ -126,17 +137,21 @@ def compute_fitness(chromosome, Dataset_features, prediction_target, alpha=1, Be
 # the function returns a dictionary of chromosome and value of each fitness for this chromosome
 # Function to Calculate Fitness for Whole Population
 
-def get_fitness_list(population, Dataset_features, prediction_target):
+def get_fitness_list(_population, dataset_features, prediction_target, alpha=1, beta=1):
     """
-    Returns a list of fitness values for each chromosome in the population.
+        Returns a list of fitness values for each chromosome in the population.
     """
-    fitness_list = []
+    fitness_list:[Chromosome] = []
 
-    for chromosome in population:
-        fitness = compute_fitness(chromosome, Dataset_features, prediction_target, alpha=1, Beta=1)
-        fitness_list.append(fitness)
+    for chromosome in _population:
+        fitness = compute_fitness(chromosome, Dataset_features, prediction_target, alpha, beta)
+        chromosome = Chromosome(bit_string=chromosome, fitness=fitness)
+        fitness_list.append(chromosome)
 
     return fitness_list
+
+
+
 
 import pandas as pd
 # Importing the dataset
