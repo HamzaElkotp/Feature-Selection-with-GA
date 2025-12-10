@@ -5,10 +5,14 @@ from re import S
 import numpy as np
 import array
 
-from typing import TypedDict
+from typing import TypedDict, List
+
+
 class Chromosome(TypedDict):
     bit_string: np.int64
     fitness: float
+    
+Population: List[Chromosome]
 
 class Generation(TypedDict):
     average_fitness: float
@@ -137,18 +141,20 @@ def compute_fitness(chromosome, dataset_features, prediction_target, alpha=1, be
 # the function returns a dictionary of chromosome and value of each fitness for this chromosome
 # Function to Calculate Fitness for Whole Population
 
-def get_fitness_list(_population, dataset_features, prediction_target, alpha=1, beta=1):
+def get_population_fitness(_population, dataset_features, prediction_target, alpha=1, beta=1):
     """
         Returns a list of fitness values for each chromosome in the population.
     """
-    fitness_list:[Chromosome] = []
+    population_with_fitenss:Population = []
 
     for chromosome in _population:
         fitness = compute_fitness(chromosome, Dataset_features, prediction_target, alpha, beta)
         chromosome = Chromosome(bit_string=chromosome, fitness=fitness)
-        fitness_list.append(chromosome)
+        population_with_fitenss.append(chromosome)
 
-    return fitness_list
+    sorted_population = Descending_order_fitnesses(population_with_fitenss)
+
+    return sorted_population
 
 
 
@@ -171,7 +177,7 @@ Dataset_features = pd.get_dummies(Dataset_features, columns=categorical_cols, dr
 
 population = initialize_population(population_size=20, num_features=len(Dataset_features.columns))
 
-fitness_list = get_fitness_list(population, Dataset_features, prediction_target)
+fitness_list = get_population_fitness(population, Dataset_features, prediction_target)
 
 print(fitness_list)
 
