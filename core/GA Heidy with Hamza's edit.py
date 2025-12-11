@@ -264,16 +264,13 @@ def Descending_order_fitnesses(population_with_fitness:Population) -> Population
     )
 
 # Function: Descending_order_ratios :
-def Descending_order_ratios(list1, fitnesses): #list1 =[0.5,0.3,0.2] 
-    total_fitness = sum(fitnesses)#1
-    ratios =[]
-    for fit in list1:
-        ratio =(fit / total_fitness)*100 # -> 0.5/1*100=50
-        ratios.append(ratio) 
+def Descending_order_ratios(sorted_population:Population):
+    total_fitness = sum(chrom["fitness"] for chrom in sorted_population) # before it was `total_fitness = sum(fitnesses)`
+
+    ratios = [(chromo["fitness"] / total_fitness) * 100 for chromo in sorted_population]
     
     return ratios #[50,30,20]
 
-des_r = Descending_order_ratios(list1, fitnesses)
 
 def roulette_wheel(ratios):
     """
