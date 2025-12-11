@@ -16,6 +16,7 @@ Population = List[Chromosome]
 
 class Generation(TypedDict):
     average_fitness: float
+    total_fitness: float
     best_chromosome: Chromosome
     worst_chromosome: Chromosome
 
