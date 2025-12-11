@@ -61,9 +61,9 @@ def initialize_population(population_size: int , num_features: int):
 
     population = set()
     while len(population) < population_size: # generate chromosomes until generate the full population with only unique valid chromosomes
-        chromosome = create_bitstring_chromosome(num_features)
-        if validate_bitstring_chromosome(chromosome): # validate chromosome
-            population.add(chromosome)
+        chrom = create_bitstring_chromosome(num_features)
+        if validate_bitstring_chromosome(chrom): # validate chromosome
+            population.add(chrom)
     return [np.array(c) for c in population] # the function uses a list comprehension to create a list of random chromosomes
 
 
@@ -147,14 +147,12 @@ def get_population_fitness(_population, dataset_features, prediction_target, alp
     """
     population_with_fitness:Population = []
 
-    for chromosome in _population:
-        fitness = compute_fitness(chromosome, Dataset_features, prediction_target, alpha, beta)
-        chromosome = Chromosome(bit_string=chromosome, fitness=fitness)
-        population_with_fitness.append(chromosome)
+    for chrom in _population:
+        fitness = compute_fitness(chrom, Dataset_features, prediction_target, alpha, beta)
+        chrom = Chromosome(bit_string=chrom, fitness=fitness)
+        population_with_fitness.append(chrom)
 
-    sorted_population = Descending_order_fitnesses(population_with_fitness)
-
-    return sorted_population
+    return population_with_fitness
 
 
 
