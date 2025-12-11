@@ -298,13 +298,13 @@ print(roulette_list)
 
 import random
 
-def roulette_wheel_selection(roulette_list, list2, population):
+def roulette_wheel_selection(ratio_list, list2, population):
     # random number between 0 and 100
-    r = random.uniform(0, 100) #->70
+    r = random.uniform(0, ratio_list[-1]) #->70
 
     # Find the first interval where r <= roulette_list[i]
-    for i in range(len(roulette_list)): 
-        if r <= roulette_list[i] :    
+    for i in range(len(ratio_list)):
+        if r <= ratio_list[i] :
             selected_index = list2[i]          # original index in population
             return population[selected_index]  # return the chromosome
         
