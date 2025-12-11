@@ -256,37 +256,12 @@ fitnesses = shift_fitness(fitness_list)
 
 
 # Function: Descending_order_fitnesses
-def Descending_order_fitnesses(fitnesses):
-    """
-    Returns:
-        list1: fitness values sorted in descending order
-        list2: indices of chromosomes arranged according to sorted fitness
-    """
-
-    # Pair index with fitness
-    indexed_fitness = list(enumerate(fitnesses))  #fitnesses =[30,20,40]
-    #Ex:
-    # indexed_fitness = [(0,30), (1,20), (2,40)]
-
-    # Sort by fitness DESC (key = fitness)
-    sorted_pairs = sorted(indexed_fitness, key=lambda x: x[1], reverse=True)
-    #Ex:
-    # sorted_pairs = [(2,40), (0,30), (1,20)]
-
-    # des_order_fitnesses: sorted fitness values
-    des_order_fitnesses = [pair[1] for pair in sorted_pairs]
-    #des_order_fitnesses = [40,30,20]
-
-    # des_order_indices: original indices arranged based on sorted fitness
-    des_order_indices = [pair[0] for pair in sorted_pairs]
-    # des_order_indices: [2,0,1]
-
-    return des_order_fitnesses, des_order_indices
-
-list1, list2 = Descending_order_fitnesses(fitnesses)
-
-print("Descending Fitness:", list1)
-print("Sorted Indexes:", list2)
+def Descending_order_fitnesses(population_with_fitness:Population) -> Population:
+    return sorted(
+        population_with_fitness,
+        key=lambda chrom: chrom["fitness"],
+        reverse=True
+    )
 
 # Function: Descending_order_ratios :
 def Descending_order_ratios(list1, fitnesses): #list1 =[0.5,0.3,0.2] 
