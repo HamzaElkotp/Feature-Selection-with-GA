@@ -349,6 +349,29 @@ def Two_point_crossover(p1, p2):
     else:
         offspring1 = p1[:r1] + p2[r1:r2] + p1[r2:]
         offspring2 = p2[:r1] + p1[r1:r2] + p2[r2:]
-    
+
     return offspring1, offspring2
 
+
+
+def k_points_crossover(parent1, parent2, k):
+    chromo_len = len(parent1)
+    points = random.sample(range(1, chromo_len - 1), k)
+    points.sort()
+    points = [0] + points + [chromo_len]
+
+    child1 = []
+    child2 = []
+
+    for i in range(len(points) - 1):
+        start = points[i]
+        end = points[i + 1]
+
+        if i % 2 == 0:  # takes even segments: p1 → child1, p2 → child2
+            child1 += parent1[start:end]
+            child2 += parent2[start:end]
+        else:  # takes odd segment: p2 → child1, p1 → child2
+            child1 += parent2[start:end]
+            child2 += parent1[start:end]
+
+    return child1, child2
