@@ -237,23 +237,17 @@ print(p4)
 #
 # Shift Fitness Values (to be positive)
 
-
-# Shift fitness to ensure all values are positive
-def shift_fitness(fitness_list):
-    # Extract fitness values from dict
-    fitnesses = [fitness_list[i]["fitness"] for i in fitness_list]
-
-    min_f = min(fitness_list)
-
+def shift_fitnesses(sorted_population: Population):
+    min_fit = min(chromo["fitness"] for chromo in sorted_population)
     # Shift values only if needed
-    if min_f <= 0:
-        shift_amount = abs(min_f) + 1e-6
-        fitnesses = [f + shift_amount for f in fitness_list]
+    if min_fit < 0:
+        shift = -min_fit
+    else:
+        shift = 0
 
-    return fitnesses
-
-fitnesses = shift_fitness(fitness_list)
+    return [chromo["fitness"] + shift for chromo in sorted_population]
 # Now we can do : Roulette Wheel Selection (Fitness Proportionate) Safetly
+
 
 
 # Function: Descending_order_fitnesses
@@ -265,10 +259,10 @@ def Descending_order_fitnesses(population_with_fitness:Population) -> Population
     )
 
 # Function: Descending_order_ratios :
-def Descending_order_ratios(sorted_population:Population):
-    total_fitness = sum(chrom["fitness"] for chrom in sorted_population) # before it was `total_fitness = sum(fitnesses)`
+def Descending_order_ratios(shifted_fitness):
+    total_fitness = sum(shifted_fitness)
 
-    ratios = [(chromo["fitness"] / total_fitness) * 100 for chromo in sorted_population]
+    ratios = [(fitness / total_fitness) * 100 for fitness in shifted_fitness]
     
     return ratios #[50,30,20]
 
