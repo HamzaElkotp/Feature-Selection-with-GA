@@ -305,11 +305,10 @@ def roulette_wheel_selection(ratio_list, list2, population):
     # Find the first interval where r <= roulette_list[i]
     for i in range(len(ratio_list)):
         if r <= ratio_list[i] :
-            selected_index = list2[i]          # original index in population
-            return population[selected_index]  # return the chromosome
+            return population[i]  # return the chromosome
         
 
-selected = roulette_wheel_selection(roulette_list, list2, population)
+selected = roulette_wheel_selection(roulette_list, population)
 print(selected)
 
 ################################################################################################################### 
