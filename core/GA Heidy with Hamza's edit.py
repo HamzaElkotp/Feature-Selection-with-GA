@@ -292,7 +292,7 @@ print(roulette_list)
 
 import random
 
-def roulette_wheel_selection(ratio_list, list2, population):
+def roulette_wheel_selection(ratio_list, population):
     # random number between 0 and 100
     r = random.uniform(0, ratio_list[-1]) #->70
 
