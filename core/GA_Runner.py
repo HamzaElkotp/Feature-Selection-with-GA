@@ -5,20 +5,30 @@ import numpy as np
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from cleaned import (
-    initialize_population,
-    validate_bitstring_chromosome,
-    compute_fitness # can use compute_fitness_list better
+from GA_functions import (
+Chromosome,
+Population,
+Generation,
+create_bitstring_chromosome,
+validate_bitstring_chromosome,
+initialize_population,
+compute_accuracy,
+compute_fitness,
+get_population_fitness,
+Descending_order_fitnesses,
+random_selection,
+random_selection_unique,
+shift_fitnesses,
+Descending_order_ratios,
+roulette_wheel,
+roulette_wheel_selection,
+tournament_selection,
+k_points_crossover,
+bit_flip_mutation,
+Complement_mutation,
+reverse_mutation,
+Rotation_mutation
 )
-
-class Chromosome(TypedDict):
-    bit_string: np.int64
-    fitness: float
-
-class Generation(TypedDict):
-    average_fitness: float
-    best_chromosome: Chromosome
-    worst_chromosome: Chromosome
 
 
 class GA:
@@ -59,6 +69,7 @@ class GA:
 
 
         population = self.initiate_population(self.population_size)
+        last_generated_population:[Chromosome] = computer_generation_fitness(population)
         # computer fitness first
         # last_generated_population = population # always will equal to the generation that = a sorted list of chromosomes class
         # extract info
@@ -79,7 +90,7 @@ class GA:
 
         return generations
 
-    def master_run(self, num_runs, max_workers=min(32, os.cpu_count() + 4)):
+    def master_run(self, num_runs, max_workers=min(32, os.cpu_count())):
         all_results = [None] * num_runs
 
         def run_wrapper(i):
@@ -104,7 +115,7 @@ class GA:
 #     selection = my_selection,
 #     crossover = my_crossover,
 #     mutation = my_mutation,
-#     computer_generation_fitness = compute_fitness, ######### replace with compute_fitness_list
+#     computer_generation_fitness = get_fitness_list, ######### replace with compute_fitness_list
 #     num_generations=100,
 #     population_size=20,
 #     mutation_percent=0.09,
