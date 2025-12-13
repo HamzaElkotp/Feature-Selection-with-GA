@@ -14,6 +14,7 @@ Generation,
 # Helper Functions
 validated_inputs,
 extract_gen_info,
+unique_list,
 unique_population,
 Descending_order_fitnesses,
 
@@ -73,7 +74,7 @@ class GA:
 
         self.num_generations = num_generations
         self.population_size = population_size
-        self.crossover_k_points = crossover_k_points
+        self.crossover_k_points = crossover_k_points ###
         self.mutation_percent = mutation_percent
         self.elitism_percent = elitism_percent
         self.alpha = alpha
@@ -83,36 +84,38 @@ class GA:
         self.result_col_name = result_col_name
         self.prediction_target = None
         self.features = None
+        self.num_features=0
 
     def initiate_dataset(self):
         df = pd.read_csv(self.dataset_path)
         self.prediction_target = df[self.result_col_name]
         self.features = df.drop(columns=[self.result_col_name])
+        self.num_features = len(self.features.columns)
 
     def run(self):
         self.initiate_dataset()
-        validated_inputs(self.dataset_path, self.result_col_name, self.initiate_population, self.features, self.prediction_target)
+
+        # validated_inputs(self.dataset_path, self.result_col_name, self.initiate_population, self.features, self.prediction_target)
 
         # Store all generations
         generations:[Generation] = []
 
-        population = self.initiate_population(self.population_size, self.features)
+        population = self.initiate_population(self.population_size, self.num_features)
         last_generated_population:Population = self.compute_generation_fitness(population, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta)
         last_generated_population = Descending_order_fitnesses(last_generated_population)
 
         generations.append(extract_gen_info(last_generated_population))
 
-
         for i in range(self.num_generations):
             # Determine number of parents to select to generate new size that is x1.5
-            num_of_parents_needed = math.ceil((len(last_generated_population) * 1.5) / 2)
-            num_of_parents_needed -= num_of_parents_needed%2
-            if(num_of_parents_needed <= 0):
-                num_of_parents_needed = len(last_generated_population)
-                num_of_parents_needed -= num_of_parents_needed % 2
+            num_of_combinations_needed = math.ceil(len(last_generated_population) * 1.5)
+            num_of_combinations_needed -= num_of_combinations_needed%2
+            if(num_of_combinations_needed <= 0):
+                num_of_combinations_needed = len(last_generated_population)
+                num_of_combinations_needed -= num_of_combinations_needed % 2
 
             # Select parents from old generation
-            selected_parents: Population = self.selection(last_generated_population, num_of_parents_needed)
+            selected_parents: Population = self.selection(last_generated_population, num_of_combinations_needed)
             # Marriage parents with each others and get unique children
             new_children = self.crossover(selected_parents, self.crossover_k_points)
 
@@ -122,7 +125,7 @@ class GA:
             new_children.extend(mutated)
 
             # Make sure new generation children are all unique (Optimization before compute fitness)
-            new_children = list(set((new_children)))
+            new_children = unique_list(new_children)
 
             # Compute fitness of children
             new_children_with_fitness: Population = self.compute_generation_fitness(new_children, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta)
@@ -168,20 +171,21 @@ class GA:
 MyGa = GA(
 initiate_population=initialize_population,
 elitism=elitism_selector,
-selection=random_selection_unique,
+selection=tournament_selection,
 crossover=population_k_point_crossover,
-mutation=bit_flip_mutator,
+mutation=complement_mutator,
 compute_generation_fitness=get_population_fitness,
-dataset_path="D:\SelfAcademicLearn\\University\Year 3\AI\processed_Breast_Cancer_Dataset",
+dataset_path=r"D:\SelfAcademicLearn\University\Year 3\AI\Project\processed_Breast_Cancer_Dataset.csv",
 result_col_name="diagnosis",
 num_generations=10,
-population_size=20,
-crossover_k_points=1,
-mutation_percent=1,
+population_size=50,
+crossover_k_points=2,
+mutation_percent=4,
 elitism_percent=1,
 alpha=1,
 beta=1,
 )
 #
-MyGa.run()
+x:[Generation] = MyGa.run()
+print(x)
 # MyGa.master_run(num_runs=100)
