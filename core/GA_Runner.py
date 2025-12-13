@@ -1,33 +1,45 @@
+import math
 import os
-from typing import TypedDict
-
 import numpy as np
+import pandas as pd
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from GA_functions import (
+# Types
 Chromosome,
 Population,
 Generation,
+
+# Helper Functions
+validated_inputs,
+extract_gen_info,
+unique_population,
+Descending_order_fitnesses,
+
+
+# GA General Functions
 create_bitstring_chromosome,
 validate_bitstring_chromosome,
 initialize_population,
-compute_accuracy,
-compute_fitness,
 get_population_fitness,
-Descending_order_fitnesses,
-random_selection,
+
+# Selection Methods
 random_selection_unique,
-shift_fitnesses,
-Descending_order_ratios,
-roulette_wheel,
 roulette_wheel_selection,
 tournament_selection,
-k_points_crossover,
-bit_flip_mutation,
-Complement_mutation,
-reverse_mutation,
-Rotation_mutation
+
+# Cross-over Methods
+population_k_point_crossover,
+
+# Elitism Methods
+elitism_selector,
+
+# Mutation Methods
+bit_flip_mutator,
+complement_mutator,
+reverse_mutator,
+rotation_mutator,
 )
 
 
@@ -35,60 +47,104 @@ class GA:
     def __init__(
         self,
         initiate_population,
-        validate_chromosome,
         elitism,
         selection,
         crossover,
         mutation,
-        computer_generation_fitness,
+        compute_generation_fitness,
+
+        dataset_path,
+
         num_generations=100,
-        population_size=100,
-        mutation_percent=0.05,
-        elitism_percent=0.05,
+        population_size=20,
+        crossover_k_points=1,
+        mutation_percent=1,
+        elitism_percent=1,
         alpha=1,
         beta=1,
     ):
         self.initiate_population = initiate_population
-        self.validate_chromosome = validate_chromosome
         self.elitism = elitism
         self.selection = selection
         self.crossover = crossover
         self.mutation = mutation
-        self.computer_generation_fitness = computer_generation_fitness
+        self.compute_generation_fitness = compute_generation_fitness
 
         self.num_generations = num_generations
         self.population_size = population_size
+        self.crossover_k_points = crossover_k_points
         self.mutation_percent = mutation_percent
         self.elitism_percent = elitism_percent
         self.alpha = alpha
         self.beta = beta
 
+        self.dataset_path = dataset_path
+        self.prediction_target = None
+        self.features = None
+
+    def initiate_dataset(self):
+        df = pd.read_csv(self.dataset_path)
+        self.prediction_target = df['Test Results']
+        self.features = df.drop(columns=['Test Results'])
+
     def run(self):
+        self.initiate_dataset()
+        validated_inputs(self.dataset_path, self.initiate_population, self.features, self.prediction_target)
+
         # Store all generations
         generations:[Generation] = []
 
+        population = self.initiate_population(self.population_size, self.features)
+        last_generated_population:Population = self.compute_generation_fitness(population, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta)
+        last_generated_population = Descending_order_fitnesses(last_generated_population)
 
-        population = self.initiate_population(self.population_size)
-        last_generated_population:[Chromosome] = computer_generation_fitness(population)
-        # computer fitness first
-        # last_generated_population = population # always will equal to the generation that = a sorted list of chromosomes class
-        # extract info
-        # init_Generation = Generation()
-        generations.append(population)
+        generations.append(extract_gen_info(last_generated_population))
+
 
         for i in range(self.num_generations):
-            # elites = self.elitism(population, self.elitism_percent)
+            # Determine number of parents to select to generate new size that is x1.5
+            num_of_parents_needed = math.ceil((len(last_generated_population) * 1.5) / 2)
+            num_of_parents_needed -= num_of_parents_needed%2
+            if(num_of_parents_needed <= 0):
+                num_of_parents_needed = len(last_generated_population)
+                num_of_parents_needed -= num_of_parents_needed % 2
 
-            # selected = self.selection(population)
-            # offspring = self.crossover(selected)
-            #
-            # mutated = self.mutation(offspring)
+            # Select parents from old generation
+            selected_parents: Population = self.selection(last_generated_population, num_of_parents_needed)
+            # Marriage parents with each others and get unique children
+            new_children = self.crossover(selected_parents, self.crossover_k_points)
 
-            # population = mutated
-            new_gen = Generation()
+            # Do mutation from old generation and push them to the new
+            mutation_number = max(math.ceil(len(last_generated_population) * self.mutation_percent / 100), 1)
+            mutated = self.mutation(last_generated_population, mutation_number)
+            new_children.extend(mutated)
+
+            # Make sure new generation children are all unique (Optimization before compute fitness)
+            new_children = list(set((new_children)))
+
+            # Compute fitness of children
+            new_children_with_fitness: Population = self.compute_generation_fitness(new_children, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta)
+
+            # Do elitism from old generation and push them to the new
+            elitism_number = max(math.ceil(len(last_generated_population) * self.elitism_percent / 100), 1)
+            elites = self.elitism(last_generated_population, elitism_number)
+            new_children_with_fitness.extend(elites)
+
+            # Make sure new generation children are all unique
+            new_children_with_fitness = unique_population(new_children_with_fitness)
+
+            # Sort the new Generation
+            new_children_with_fitness = Descending_order_fitnesses(new_children_with_fitness)
+
+            # Store Generation
+            new_gen = extract_gen_info(new_children_with_fitness)
             generations.append(new_gen)
 
+            last_generated_population = new_children_with_fitness
+
         return generations
+
+
 
     def master_run(self, num_runs, max_workers=min(32, os.cpu_count())):
         all_results = [None] * num_runs
@@ -110,7 +166,6 @@ class GA:
 
 # MyGa = GA(
 #     initiate_population = initialize_population,
-#     validate_chromosome = validate_bitstring_chromosome,
 #     elitism = my_elitism,
 #     selection = my_selection,
 #     crossover = my_crossover,
@@ -125,4 +180,4 @@ class GA:
 # )
 #
 # MyGa.run()
-# MyGa.master_run(num_runs=30)
+# MyGa.master_run(num_runs=100)
