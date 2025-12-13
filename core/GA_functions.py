@@ -4,8 +4,8 @@ import random
 import array
 from sklearn.model_selection import cross_val_score
 from sklearn.tree import DecisionTreeClassifier
-
 from typing import TypedDict, List
+
 
 class Chromosome(TypedDict):
     bit_string: np.int64
@@ -18,7 +18,7 @@ class Generation(TypedDict):
     total_fitness: float
     best_chromosome: Chromosome
     worst_chromosome: Chromosome
-
+    gen_size: int
 
 
 def create_bitstring_chromosome(num_features: int) :
@@ -31,13 +31,6 @@ def validate_bitstring_chromosome(chromosome:tuple) -> bool :
     return True
 
 def initialize_population(population_size: int , num_features: int):
-    if population_size < 2:
-        raise ValueError("population_size must be at least 2")
-    if population_size >= pow(2, num_features):
-        raise ValueError("population_size must be less than 2^num_features.")
-    if num_features < 2:
-        raise ValueError("num_features must be at least 2")
-
     population = set()
     while len(population) < population_size:
         chromosome = create_bitstring_chromosome(num_features)
@@ -61,6 +54,7 @@ FITNESS FUNCTIONS
 """""""""""""""""""""""""""""""""""""""""
 
 def compute_accuracy(chromosome, dataset_features, prediction_target) -> np.floating:
+    # Decode chromosome to features
     selected_indices = np.where(chromosome == 1)[0]
     dataset_features_selected = dataset_features.iloc[:, selected_indices]
     model = DecisionTreeClassifier()
@@ -69,6 +63,7 @@ def compute_accuracy(chromosome, dataset_features, prediction_target) -> np.floa
     return accuracy
 
 
+# (alpha * accuracy) - (beta * selected / tootal feature)
 def compute_fitness(chromosome, dataset_features, prediction_target, alpha=1, beta=1) -> float:
     selected_indices = np.where(chromosome == 1)[0]
     accuracy = compute_accuracy(chromosome, dataset_features, prediction_target)
@@ -119,7 +114,6 @@ def random_selection_unique(population: Population, k=2):
 """
     FOR ROULETTE WHEEL SELECTION
 """
-
 def shift_fitnesses(sorted_population: Population):
     min_fit = min(chromo["fitness"] for chromo in sorted_population)
     if min_fit < 0:
@@ -227,50 +221,43 @@ MUTATION FUNCTIONS
 #bitflip
 #c : 1001
 #c flip : 1101
-def bit_flip_mutation(chromo, mutation_rate=0.1):
-    # Pick a random gene index
+def bit_flip_mutation(chromo):
     r = random.randrange(len(chromo))
-    if np.random.rand() < mutation_rate:
-        if chromo[r] == 1 :
-             chromo[r] = 0
-        else :
-            chromo[r] = 1
+    if chromo[r] == 1 :
+         chromo[r] = 0
+    else :
+        chromo[r] = 1
     return chromo
 
 #Complement
 #c : 0101
 #c comp : 1010
-def Complement_mutation(chromo, mutation_rate=0.1):
-    if np.random.rand() < mutation_rate:
-        for i in range(len(chromo)) :
-            if chromo[i] == 1 :
-                chromo[i] = 0
-            else :
-                chromo[i] = 1
+def Complement_mutation(chromo):
+    for i in range(len(chromo)) :
+        if chromo[i] == 1 :
+            chromo[i] = 0
+        else :
+            chromo[i] = 1
     return chromo
 
 #reverse
 #c : 1011
 #c rev : 1101
-def reverse_mutation(chromo, mutation_rate=0.1):
+def reverse_mutation(chromo):
     temp_offspring1 = np.zeros(len(chromo), dtype=int) # create a 0 chromosome .
-    if np.random.rand() < mutation_rate:
-        for i in range(len(chromo)) :
-            temp_offspring1[i] = chromo[len((chromo)-1)-i]
+    for i in range(len(chromo)) :
+        temp_offspring1[i] = chromo[len((chromo)-1)-i]
     offspring1 = temp_offspring1
     return offspring1
 
 # Rotation
 #c: 1011
 #c Rotation : 1110
-def Rotation_mutation(chromo, mutation_rate=0.1):
+def Rotation_mutation(chromo):
     # Pick a random gene index
     r = random.randint(1, len(chromo) - 1)
-    if np.random.rand() < mutation_rate:
-        # numpy concatenation
-        temp_offspring = np.concatenate((chromo[r:], chromo[:r]))
-    else:
-        temp_offspring = chromo
+    # numpy concatenation
+    temp_offspring = np.concatenate((chromo[r:], chromo[:r]))
 
     offspring = temp_offspring
     return offspring
