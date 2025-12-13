@@ -22,7 +22,7 @@ class Generation(TypedDict):
 
 
 def create_bitstring_chromosome(num_features: int) :
-    return tuple(np.random.randint(2, size=num_features))
+    return tuple(int(x) for x in np.random.randint(2, size=num_features))
 
 def validate_bitstring_chromosome(chromosome:tuple) -> bool :
     selected_indices = chromosome.count(1)
@@ -36,7 +36,8 @@ def initialize_population(population_size: int , num_features: int):
         chromosome = create_bitstring_chromosome(num_features)
         if validate_bitstring_chromosome(chromosome):
             population.add(chromosome)
-    return [np.array(c) for c in population]
+
+    return [list(c) for c in population]
 
 
 """""""""""""""""""""""""""""""""""""""""
@@ -55,7 +56,7 @@ FITNESS FUNCTIONS
 
 def compute_accuracy(chromosome, dataset_features, prediction_target) -> np.floating:
     # Decode chromosome to features
-    selected_indices = np.where(chromosome == 1)[0]
+    selected_indices = np.where(np.array(chromosome) == 1)[0]
     dataset_features_selected = dataset_features.iloc[:, selected_indices]
     model = DecisionTreeClassifier()
     accuracy = np.mean(cross_val_score(model, dataset_features_selected, prediction_target, cv=3))
@@ -65,7 +66,7 @@ def compute_accuracy(chromosome, dataset_features, prediction_target) -> np.floa
 
 # (alpha * accuracy) - (beta * selected / tootal feature)
 def compute_fitness(chromosome, dataset_features, prediction_target, alpha=1, beta=1) -> float:
-    selected_indices = np.where(chromosome == 1)[0]
+    selected_indices = np.where(np.array(chromosome) == 1)[0]
     accuracy = compute_accuracy(chromosome, dataset_features, prediction_target)
 
     features_total = len(chromosome)
@@ -103,12 +104,24 @@ SELECTION FUNCTIONS
 """
     FOR RANDOM SELECTION
 """
-# def random_selection(population: Population):
-#     return random.choice(population)
+def random_selection(population: Population):
+    return random.choice(population)
 
 def random_selection_unique(population: Population, parents_needed=2):
-    return random.sample(population, parents_needed)
 
+    selected_list = []
+    last_selected = None
+
+    while len(selected_list) < parents_needed:
+        selected = random_selection(population)
+
+        if selected == last_selected:
+            continue  # reject and resample
+
+        selected_list.append(selected)
+        last_selected = selected
+
+    return selected_list
 
 """
     FOR ROULETTE WHEEL SELECTION
@@ -363,6 +376,15 @@ def rotation_mutator(population: Population, k: int):
 """""""""""""""""""""""""""""""""""""""""
 Helper FUNCTIONS
 """""""""""""""""""""""""""""""""""""""""
+def unique_list(aList):
+    unique_items = []
+
+    for item in aList:
+        if item not in unique_items:
+            unique_items.append(item)
+
+    return unique_items
+
 def unique_population(population: Population) -> Population:
     seen = set()
     unique:Population = []
@@ -377,16 +399,16 @@ def unique_population(population: Population) -> Population:
     return unique
 
 def validated_inputs(dataset_path, res_col_name, population_size, features, target):
-    if(len(dataset_path) == 0):
+    if len(dataset_path) == 0:
         raise ValueError("Dataset Path cannot be empty")
 
-    if (len(res_col_name) == 0):
+    if len(res_col_name) == 0:
         raise ValueError("DataResult Column Name cannot be empty")
 
-    if(not features or len(features) == 0):
+    if len(features) == 0:
         raise ValueError("Features cannot be empty")
 
-    if (not target or len(target) == 0):
+    if len(target) == 0:
         raise ValueError("Features cannot be empty")
 
     if population_size < 2:
