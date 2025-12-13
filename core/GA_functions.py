@@ -171,27 +171,27 @@ def roulette_wheel_selection(population: Population, parents_needed)-> Populatio
 """""""""""""""""""""""""""""""""""""""""
 """""""""""""""""""""""""""""""""""""""""
 # Example
-x = initialize_population(20, 10)
-print(x)
-
-g = get_population_fitness(x, 0, 0)
-print(g)
-print(g[0]["bit_string"])
-
-sorted_pop = Descending_order_fitnesses(g)
-print(sorted_pop)
-
-shifted_fitness = shift_fitnesses(sorted_pop)
-print(shifted_fitness)
-
-ratios = Descending_order_ratios(shifted_fitness)
-print(ratios)
-
-ratio_list = roulette_wheel(ratios)
-print(ratio_list)
-
-selected = roulette_wheel_selector(ratio_list, sorted_pop)
-print(selected)
+# x = initialize_population(20, 10)
+# print(x)
+#
+# g = get_population_fitness(x, 0, 0)
+# print(g)
+# print(g[0]["bit_string"])
+#
+# sorted_pop = Descending_order_fitnesses(g)
+# print(sorted_pop)
+#
+# shifted_fitness = shift_fitnesses(sorted_pop)
+# print(shifted_fitness)
+#
+# ratios = Descending_order_ratios(shifted_fitness)
+# print(ratios)
+#
+# ratio_list = roulette_wheel(ratios)
+# print(ratio_list)
+#
+# selected = roulette_wheel_selector(ratio_list, sorted_pop)
+# print(selected)
 
 
 """
@@ -274,6 +274,17 @@ def population_k_point_crossover(population: Population, k): # do cross-over and
 
     return new_children
 
+
+"""""""""""""""""""""""""""""""""""""""""
+Elitism FUNCTIONS
+"""""""""""""""""""""""""""""""""""""""""
+def elitism_selector(population: Population, k: int) -> Population:
+    selected: Population = []
+
+    for i in range(k):
+        selected.append(population[i])
+
+    return selected
 
 
 """""""""""""""""""""""""""""""""""""""""
