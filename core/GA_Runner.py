@@ -1,5 +1,7 @@
 import math
 import os
+import time
+
 import numpy as np
 import pandas as pd
 
@@ -10,6 +12,8 @@ from GA_functions import (
 Chromosome,
 Population,
 Generation,
+Merged_Generation,
+Merged_GA,
 
 # Helper Functions
 validated_inputs,
@@ -17,7 +21,7 @@ extract_gen_info,
 unique_list,
 unique_population,
 Descending_order_fitnesses,
-
+merge_GAs,
 
 # GA General Functions
 create_bitstring_chromosome,
@@ -145,12 +149,14 @@ class GA:
             new_gen = extract_gen_info(new_children_with_fitness)
             generations.append(new_gen)
 
+            # print(new_children_with_fitness)
+
             last_generated_population = new_children_with_fitness
 
         return generations
 
 
-    def master_run(self, num_runs, max_workers=min(32, os.cpu_count())):
+    def master_run(self, num_runs, max_workers=min(32, os.cpu_count()))->Merged_GA:
         all_results = [None] * num_runs
 
         def run_wrapper(i):
@@ -165,7 +171,7 @@ class GA:
                 i, result = future.result()
                 all_results[i] = result
 
-        return all_results
+        return merge_GAs(all_results, num_runs, self.num_generations)
 
 
 MyGa = GA(
@@ -186,6 +192,13 @@ alpha=1,
 beta=1,
 )
 #
-x:[Generation] = MyGa.run()
-print(x)
-# MyGa.master_run(num_runs=100)
+# x:[Generation] = MyGa.run()
+# print(x)
+
+# start_time = time.perf_counter()
+# y = MyGa.master_run(num_runs=20)
+# end_time = time.perf_counter()
+# print(y)
+# 
+# elapsed_time = end_time - start_time
+# print(f"Elapsed time: {elapsed_time:.4f} seconds")
