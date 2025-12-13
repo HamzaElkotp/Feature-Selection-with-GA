@@ -8,7 +8,7 @@ from typing import TypedDict, List
 
 
 class Chromosome(TypedDict):
-    bit_string: np.int64
+    bit_string: List[int]
     fitness: float
 
 Population = List[Chromosome]
@@ -100,15 +100,14 @@ def Descending_order_fitnesses(population_with_fitness:Population) -> Population
 """""""""""""""""""""""""""""""""""""""""
 SELECTION FUNCTIONS
 """""""""""""""""""""""""""""""""""""""""
-
 """
     FOR RANDOM SELECTION
 """
-def random_selection(population: Population):
-    return random.choice(population)
+# def random_selection(population: Population):
+#     return random.choice(population)
 
-def random_selection_unique(population: Population, k=2):
-    return random.sample(population, k)
+def random_selection_unique(population: Population, parents_needed=2):
+    return random.sample(population, parents_needed)
 
 
 """
@@ -142,11 +141,31 @@ def roulette_wheel(ratios):
     return roulette
 
 
-def roulette_wheel_selection(ratio_list, population):
+def roulette_wheel_selector(ratio_list, population: Population)-> Chromosome:
     r = random.uniform(0, ratio_list[-1])
     for i in range(len(ratio_list)):
         if r <= ratio_list[i] :
             return population[i]
+
+def roulette_wheel_selection(population: Population, parents_needed)-> Population:
+    shifted_fitness = shift_fitnesses(population)
+    ratios = Descending_order_ratios(shifted_fitness)
+    ratio_list = roulette_wheel(ratios)
+
+    selected_list = []
+    last_selected = None
+
+    while len(selected_list) < parents_needed:
+        selected = roulette_wheel_selector(ratio_list, population)
+
+        if selected == last_selected:
+            continue  # reject and resample
+
+        selected_list.append(selected)
+        last_selected = selected
+
+    return selected_list
+
 
 
 """""""""""""""""""""""""""""""""""""""""
@@ -171,20 +190,36 @@ print(ratios)
 ratio_list = roulette_wheel(ratios)
 print(ratio_list)
 
-selected = roulette_wheel_selection(ratio_list, sorted_pop)
+selected = roulette_wheel_selector(ratio_list, sorted_pop)
 print(selected)
 
 
 """
     FOR TOURNAMENT SELECTION
 """
-def tournament_selection(population, k=3):
+def tournament_selector(population: Population, k=3) -> Chromosome:
     # sample k individuals without replacement
     contestants = random.sample(population, k)
 
     winner = max(contestants, key=lambda chrom: chrom["fitness"])
 
     return winner
+
+
+def tournament_selection(population: Population, parents_needed) -> Population:
+    selected_list = []
+    last_selected = None
+
+    while len(selected_list) < parents_needed:
+        selected = tournament_selector(population)
+
+        if selected == last_selected:
+            continue  # reject and resample
+
+        selected_list.append(selected)
+        last_selected = selected
+
+    return selected_list
 
 
 
@@ -213,6 +248,32 @@ def k_points_crossover(parent1, parent2, k):
             child2 += parent1[start:end]
 
     return child1, child2
+
+def population_k_point_crossover(population: Population, k): # do cross-over and return unique children
+    new_children = []
+    seen = set()
+
+    for i in range(1, len(population), 2):
+        child1, child2 = k_points_crossover(
+            population[i]["bit_string"],
+            population[i - 1]["bit_string"],
+            k
+        )
+
+        if validate_bitstring_chromosome(child1):
+            key = tuple(child1)
+            if key not in seen:
+                seen.add(key)
+                new_children.append(child1)
+
+        if validate_bitstring_chromosome(child2):
+            key = tuple(child2)
+            if key not in seen:
+                seen.add(key)
+                new_children.append(child2)
+
+    return new_children
+
 
 
 """""""""""""""""""""""""""""""""""""""""
@@ -261,3 +322,50 @@ def Rotation_mutation(chromo):
 
     offspring = temp_offspring
     return offspring
+
+
+
+
+
+"""""""""""""""""""""""""""""""""""""""""
+Helper FUNCTIONS
+"""""""""""""""""""""""""""""""""""""""""
+def unique_population(population: Population) -> Population:
+    seen = set()
+    unique:Population = []
+
+    for chrom in population:
+        key = tuple(chrom["bit_string"])  # genotype identity
+
+        if key not in seen:
+            seen.add(key)
+            unique.append(chrom)
+
+    return unique
+
+def validated_inputs(population_size, features, target):
+    if(not features or len(features) == 0):
+        raise ValueError("Features cannot be empty")
+
+    if (not target or len(target) == 0):
+        raise ValueError("Features cannot be empty")
+
+    if population_size < 2:
+        raise ValueError("population_size must be at least 2")
+    if population_size >= pow(2, len(features)):
+        raise ValueError("population_size must be less than 2^num_features.")
+    if len(features) < 2:
+        raise ValueError("num_features must be at least 2")
+
+
+def extract_gen_info(_population:Population) -> Generation:
+    total = sum([chromo["fitness"] for chromo in _population])
+    sz = len(_population)
+    tmp_gen: Generation = {
+        "average_fitness": total/sz,
+        "total_fitness": total,
+        "best_chromosome": _population[0],
+        "worst_chromosome": _population[-1],
+        "gen_size": sz
+    }
+    return tmp_gen
