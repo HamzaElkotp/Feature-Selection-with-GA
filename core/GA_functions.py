@@ -376,7 +376,10 @@ def unique_population(population: Population) -> Population:
 
     return unique
 
-def validated_inputs(population_size, features, target):
+def validated_inputs(dataset_path, population_size, features, target):
+    if(len(dataset_path) == 0):
+        raise ValueError("Dataset Path cannot be empty")
+
     if(not features or len(features) == 0):
         raise ValueError("Features cannot be empty")
 
