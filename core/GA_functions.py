@@ -301,6 +301,12 @@ def bit_flip_mutation(chromo):
         chromo[r] = 1
     return chromo
 
+def bit_flip_mutator(population: Population, k: int):
+    new_chromos = []
+    for i in range(k):
+        new_chromos.append(bit_flip_mutation(population[i]["bit_string"]))
+    return new_chromos
+
 #Complement
 #c : 0101
 #c comp : 1010
@@ -312,6 +318,12 @@ def Complement_mutation(chromo):
             chromo[i] = 1
     return chromo
 
+def complement_mutator(population: Population, k: int):
+    new_chromos = []
+    for i in range(k):
+        new_chromos.append(Complement_mutation(population[i]["bit_string"]))
+    return new_chromos
+
 #reverse
 #c : 1011
 #c rev : 1101
@@ -321,6 +333,12 @@ def reverse_mutation(chromo):
         temp_offspring1[i] = chromo[len((chromo)-1)-i]
     offspring1 = temp_offspring1
     return offspring1
+
+def reverse_mutator(population: Population, k: int):
+    new_chromos = []
+    for i in range(k):
+        new_chromos.append(reverse_mutation(population[i]["bit_string"]))
+    return new_chromos
 
 # Rotation
 #c: 1011
@@ -334,7 +352,11 @@ def Rotation_mutation(chromo):
     offspring = temp_offspring
     return offspring
 
-
+def rotation_mutator(population: Population, k: int):
+    new_chromos = []
+    for i in range(k):
+        new_chromos.append(Rotation_mutation(population[i]["bit_string"]))
+    return new_chromos
 
 
 
