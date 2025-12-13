@@ -97,3 +97,56 @@ def dropdown_combobox(parent, var, values, label_text=None, width=15, bootstyle=
         var.set(values[0])
 
     return frame
+
+
+def text_entry(parent, var, label_text=None, width=20,
+               bootstyle=None, placeholder=None, validate_func=None):
+    """
+    Reusable helper to create a labeled text Entry.
+
+    Args:
+        parent: parent widget
+        var: tk.StringVar linked to the Entry
+        label_text: optional label text
+        width: width of the entry
+        bootstyle: ttkbootstrap style (e.g., "default", "info", "danger")
+        placeholder: optional placeholder text
+        validate_func: optional validation callback accepting proposed text
+    """
+    frame = ttk.Frame(parent)
+
+    if label_text:
+        ttk.Label(frame, text=label_text).pack(side="left", padx=(0, 5))
+
+    entry = ttk.Entry(
+        frame,
+        textvariable=var,
+        width=width,
+        bootstyle=bootstyle or "default"
+    )
+
+    # Optional placeholder behavior
+    if placeholder:
+        entry.insert(0, placeholder)
+        entry.configure(foreground="grey")
+
+        def _clear_placeholder(event):
+            if entry.get() == placeholder:
+                entry.delete(0, "end")
+                entry.configure(foreground="white")
+
+        def _restore_placeholder(event):
+            if not entry.get():
+                entry.insert(0, placeholder)
+                entry.configure(foreground="grey")
+
+        entry.bind("<FocusIn>", _clear_placeholder)
+        entry.bind("<FocusOut>", _restore_placeholder)
+
+    # Optional validation (Tk native validation)
+    if validate_func:
+        vcmd = (frame.register(validate_func), "%P")
+        entry.configure(validate="key", validatecommand=vcmd)
+
+    entry.pack(side="left", fill="x", expand=True)
+    return frame

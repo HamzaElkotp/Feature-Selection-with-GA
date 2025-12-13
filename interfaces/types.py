@@ -5,15 +5,21 @@ from interfaces.enums import *
 
 @dataclass
 class GAParameters:
-    selection_method: SelectionMethod
-    crossover_method: CrossoverMethod
-    mutation_method: MutationMethod
-    termination_condition: TerminationCondition
-    termination_condition_n: float
-    elitism_percent: float
-    mutation_percent: float
+    elitism_percent: int
+    mutation_percent: int
+    crossover_k_points: int  # CrossoverMethod
+    initial_population_size: int
+
     alpha: float
     beta: float
+    num_of_generations: int
+
+    # dataset_path: str
+    result_col_name: str
+
+    selection_method: SelectionMethod
+    mutation_method: MutationMethod
+
 
 @dataclass
 class RunGAParameters:
