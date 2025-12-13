@@ -20,6 +20,17 @@ class Generation(TypedDict):
     worst_chromosome: Chromosome
     gen_size: int
 
+class Merged_Generation(TypedDict):
+    best_chromosome: Chromosome
+    worst_chromosome: Chromosome
+    gen_size: int
+    total_generations_fitness: float
+    average_generations_fitness: float
+
+Merged_GA = List[Merged_Generation]
+
+
+
 
 def create_bitstring_chromosome(num_features: int) :
     return tuple(int(x) for x in np.random.randint(2, size=num_features))
@@ -430,3 +441,34 @@ def extract_gen_info(_population:Population) -> Generation:
         "gen_size": sz
     }
     return tmp_gen
+
+def merge_GAs(all_results: List[List[Generation]], number_of_runs: int, number_of_generations: int) -> Merged_GA:
+    merged_results: Merged_GA = []
+
+    # Iterate over each generation index
+    for gen_idx in range(number_of_generations):
+        # Collect the same generation across all runs
+        gen_across_runs = [all_results[run_idx][gen_idx] for run_idx in range(number_of_runs)]
+
+        # Aggregate statistics
+        total_gen_fitness = sum(g["total_fitness"] for g in gen_across_runs)
+        average_gen_fitness = total_gen_fitness / number_of_runs
+
+        # Find best and worst chromosomes across runs
+        best_chromo = max((g["best_chromosome"] for g in gen_across_runs), key=lambda c: c["fitness"])
+        worst_chromo = min((g["worst_chromosome"] for g in gen_across_runs), key=lambda c: c["fitness"])
+
+        gen_size = gen_across_runs[0]["gen_size"]
+
+        # Construct merged generation
+        merged_gen: Merged_Generation = {
+            "best_chromosome": best_chromo,
+            "worst_chromosome": worst_chromo,
+            "gen_size": gen_size,
+            "total_generations_fitness": total_gen_fitness,
+            "average_generations_fitness": average_gen_fitness
+        }
+
+        merged_results.append(merged_gen)
+
+    return merged_results
