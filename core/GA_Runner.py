@@ -54,6 +54,7 @@ class GA:
         compute_generation_fitness,
 
         dataset_path,
+        result_col_name,
 
         num_generations=100,
         population_size=20,
@@ -79,17 +80,18 @@ class GA:
         self.beta = beta
 
         self.dataset_path = dataset_path
+        self.result_col_name = result_col_name
         self.prediction_target = None
         self.features = None
 
     def initiate_dataset(self):
         df = pd.read_csv(self.dataset_path)
-        self.prediction_target = df['Test Results']
-        self.features = df.drop(columns=['Test Results'])
+        self.prediction_target = df[self.result_col_name]
+        self.features = df.drop(columns=[self.result_col_name])
 
     def run(self):
         self.initiate_dataset()
-        validated_inputs(self.dataset_path, self.initiate_population, self.features, self.prediction_target)
+        validated_inputs(self.dataset_path, self.result_col_name, self.initiate_population, self.features, self.prediction_target)
 
         # Store all generations
         generations:[Generation] = []
@@ -145,7 +147,6 @@ class GA:
         return generations
 
 
-
     def master_run(self, num_runs, max_workers=min(32, os.cpu_count())):
         all_results = [None] * num_runs
 
@@ -164,20 +165,23 @@ class GA:
         return all_results
 
 
-# MyGa = GA(
-#     initiate_population = initialize_population,
-#     elitism = my_elitism,
-#     selection = my_selection,
-#     crossover = my_crossover,
-#     mutation = my_mutation,
-#     computer_generation_fitness = get_fitness_list, ######### replace with compute_fitness_list
-#     num_generations=100,
-#     population_size=20,
-#     mutation_percent=0.09,
-#     elitism_percent=0.1,
-#     alpha=0.8,
-#     beta=0.2,
-# )
+MyGa = GA(
+initiate_population=initialize_population,
+elitism=elitism_selector,
+selection=random_selection_unique,
+crossover=population_k_point_crossover,
+mutation=bit_flip_mutator,
+compute_generation_fitness=get_population_fitness,
+dataset_path="D:\SelfAcademicLearn\\University\Year 3\AI\processed_Breast_Cancer_Dataset",
+result_col_name="diagnosis",
+num_generations=10,
+population_size=20,
+crossover_k_points=1,
+mutation_percent=1,
+elitism_percent=1,
+alpha=1,
+beta=1,
+)
 #
-# MyGa.run()
+MyGa.run()
 # MyGa.master_run(num_runs=100)
