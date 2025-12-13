@@ -160,25 +160,25 @@ def get_population_fitness(_population, dataset_features, prediction_target, alp
 
 import pandas as pd
 # Importing the dataset
+
+"""""""""""""""""""""""""""""""""""""""""
+MEOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOW
+"""""""""""""""""""""""""""""""""""""""""
 df = pd.read_csv('healthcare_dataset.csv')
 
 # Define features and target
 prediction_target = df['Test Results']
 
-# Drop columns that are unlikely to be useful as features or are high cardinality strings/dates
-Dataset_features = df.drop(columns=['Test Results', 'Name', 'Doctor', 'Hospital', 'Insurance Provider', 'Date of Admission', 'Discharge Date'])
+Dataset_features = df.drop(columns=['Test Results'])
+"""""""""""""""""""""""""""""""""""""""""
+MEOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOW
+"""""""""""""""""""""""""""""""""""""""""
 
-# Identify categorical columns for one-hot encoding
-categorical_cols = Dataset_features.select_dtypes(include='object').columns
-
-# Apply one-hot encoding to categorical columns
-Dataset_features = pd.get_dummies(Dataset_features, columns=categorical_cols, drop_first=True)
-
-population = initialize_population(population_size=20, num_features=len(Dataset_features.columns))
-
-fitness_list = get_population_fitness(population, Dataset_features, prediction_target)
-
-print(fitness_list)
+# population = initialize_population(population_size=20, num_features=len(Dataset_features.columns))
+#
+# fitness_list = get_population_fitness(population, Dataset_features, prediction_target)
+#
+# print(fitness_list)
 
 
 
