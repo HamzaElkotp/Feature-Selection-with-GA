@@ -9,7 +9,9 @@ setup(
         "pandas",
         "pygad",
         "ttkbootstrap",
-        "ttkbootstrap-icons"
+        "ttkbootstrap-icons",
+        "pydantic",
+        "pathlib"
     ],
     entry_points={
         "console_scripts": [
