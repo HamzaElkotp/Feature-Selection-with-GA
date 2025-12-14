@@ -7,7 +7,7 @@ import pandas as pd
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from GA_functions import (
+from core.GA_functions import (
 # Types
 Chromosome,
 Population,
@@ -174,23 +174,23 @@ class GA:
         return merge_GAs(all_results, num_runs, self.num_generations)
 
 
-MyGa = GA(
-initiate_population=initialize_population,
-elitism=elitism_selector,
-selection=tournament_selection,
-crossover=population_k_point_crossover,
-mutation=complement_mutator,
-compute_generation_fitness=get_population_fitness,
-dataset_path=r"D:\SelfAcademicLearn\University\Year 3\AI\Project\processed_Breast_Cancer_Dataset.csv",
-result_col_name="diagnosis",
-num_generations=10,
-population_size=50,
-crossover_k_points=2,
-mutation_percent=4,
-elitism_percent=1,
-alpha=1,
-beta=1,
-)
+# MyGa = GA(
+# initiate_population=initialize_population,
+# elitism=elitism_selector,
+# selection=tournament_selection,
+# crossover=population_k_point_crossover,
+# mutation=complement_mutator,
+# compute_generation_fitness=get_population_fitness,
+# dataset_path=r"D:\SelfAcademicLearn\University\Year 3\AI\Project\processed_Breast_Cancer_Dataset.csv",
+# result_col_name="diagnosis",
+# num_generations=10,
+# population_size=50,
+# crossover_k_points=2,
+# mutation_percent=4,
+# elitism_percent=1,
+# alpha=1,
+# beta=1,
+# )
 #
 # x:[Generation] = MyGa.run()
 # print(x)
