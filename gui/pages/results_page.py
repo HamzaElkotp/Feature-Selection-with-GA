@@ -23,24 +23,32 @@ class ScrollableFrame(ttk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
-        canvas = tk.Canvas(self, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self, orient=VERTICAL, command=canvas.yview)
+        self.canvas = tk.Canvas(self, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(self, orient=VERTICAL, command=self.canvas.yview)
 
-        self.scrollable_frame = ttk.Frame(canvas)
+        self.scrollable_frame = ttk.Frame(self.canvas)
 
         self.scrollable_frame.bind(
             "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
 
-        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=scrollbar.set)
 
-        canvas.pack(side=LEFT, fill=BOTH, expand=True)
+        # Update canvas window width when canvas is resized
+        self.canvas.bind("<Configure>", self._on_canvas_configure)
+
+        self.canvas.pack(side=LEFT, fill=BOTH, expand=True)
         scrollbar.pack(side=RIGHT, fill=Y)
 
         # Mouse wheel support
-        canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(-1 * int(e.delta / 120), "units"))
+        self.canvas.bind_all("<MouseWheel>", lambda e: self.canvas.yview_scroll(-1 * int(e.delta / 120), "units"))
+
+    def _on_canvas_configure(self, event):
+        # Update the canvas window width to match the canvas width
+        canvas_width = event.width
+        self.canvas.itemconfig(self.canvas_window, width=canvas_width)
 
 
 # =====================================================
@@ -56,18 +64,22 @@ class ResultsPage(ttk.Frame):
         self.container = scroll.scrollable_frame
         self.results = results
 
+        # Main content container to ensure full width usage
+        content_frame = ttk.Frame(self.container)
+        content_frame.pack(fill=BOTH, expand=True, padx=10)
+
         ttk.Label(
-            self.container,
+            content_frame,
             text="GA Results",
             font=("Helvetica", 18, "bold")
         ).pack(pady=(15, 20))
 
         if HAS_MATPLOTLIB:
-            self._build_plots(self.container)
+            self._build_plots(content_frame)
         else:
-            ttk.Label(self.container, text="Matplotlib is not available").pack()
+            ttk.Label(content_frame, text="Matplotlib is not available").pack()
 
-        self._build_tables(self.container)
+        self._build_tables(content_frame)
 
     # =====================================================
     # -------------------- PLOTS --------------------------
