@@ -2,3 +2,5 @@
 .venv/Lib
 __pycache__
 .venv
+.idea/*
+*.xml

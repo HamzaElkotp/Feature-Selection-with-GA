@@ -8,6 +8,10 @@ from gui.pages.nondeterministic_page import NonDeterministicPage
 from gui.pages.wait_page import WaitPage
 from gui.pages.results_page import ResultsPage
 
+from core.GA_functions import (
+# Types
+Merged_GA
+)
 
 class Application(ttk.Window):
     def __init__(self, ga_service: GAInterface):
@@ -49,7 +53,7 @@ class Application(ttk.Window):
         """Show waiting screen while GA runs."""
         self._switch_page(WaitPage)
 
-    def show_results_page(self, results):
+    def show_results_page(self, results:Merged_GA):
         """Show GA results page."""
         self._switch_page(ResultsPage, results=results)       
 

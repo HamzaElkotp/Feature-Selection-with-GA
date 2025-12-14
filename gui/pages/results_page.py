@@ -14,6 +14,11 @@ try:
 except Exception:
     HAS_MATPLOTLIB = False
 
+from core.GA_functions import (
+# Types
+Merged_GA
+)
+
 
 class ResultsPage(ttk.Frame):
     """Show GA results including a simple plot of best fitness per generation.
@@ -21,7 +26,7 @@ class ResultsPage(ttk.Frame):
     If `results` is None, a mock RunGAResult is generated for demo purposes.
     """
 
-    def __init__(self, master, results: RunGAResult | None = None):
+    def __init__(self, master, results: Merged_GA):
         super().__init__(master)
 
         ttk.Label(self, text="Results", font=("Helvetica", 16, "bold")).pack(pady=12)

@@ -4,6 +4,10 @@ from tkinter import messagebox
 from interfaces.types import RunGAParameters, RunGAResult
 from interfaces.enums import RunMode
 
+from core.GA_functions import (
+# Types
+Merged_GA
+)
 
 class InputController:
     """Controller that accepts typed RunGAParameters and invokes the GA service.
@@ -16,15 +20,6 @@ class InputController:
         self.gui_context = gui_context
 
     def handle_user_input(self, run_params: RunGAParameters):
-        # Basic validation: ensure GA percentages are in allowed range
-        try:
-            ga = run_params.ga_parameters
-            if ga.elitism_percent + ga.mutation_percent > 25:
-                raise ValueError("Elitism + Mutation cannot exceed 25%")
-        except Exception as e:
-            messagebox.showerror("Config Error", str(e))
-            return
-
         # Show the Wait Page
         self.gui_context.show_wait_page()
 
@@ -35,9 +30,9 @@ class InputController:
     def run_ga(self, run_params: RunGAParameters):
         # Use the ga_service attached to the application (implements GAInterface)
         # Define a completion callback the GA service will call when finished.
-        def on_complete(result: RunGAResult):
+        def on_complete(results: Merged_GA):
             # Ensure we schedule UI updates on the main/UI thread
-            self.gui_context.after(0, self.gui_context.show_results_page, result)
+            self.gui_context.after(0, self.gui_context.show_results_page, results)
 
         try:
             # Pass the on_complete callback to the GA service. The service
