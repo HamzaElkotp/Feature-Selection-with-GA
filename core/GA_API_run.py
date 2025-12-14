@@ -46,7 +46,7 @@ rotation_mutator,
 )
 
 
-class MockGAService(GAInterface):
+class GA_Service(GAInterface):
 
     def run_ga(self, params: RunGAParameters, on_complete: Optional[Callable[[Merged_GA], None]] = None) -> None:
         new_Ga = GA(

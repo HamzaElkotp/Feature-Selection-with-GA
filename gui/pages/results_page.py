@@ -132,7 +132,7 @@ class ResultsPage(ttk.Frame):
     def _build_mock_result(self) -> RunGAResult:
         """Return a mock RunGAResult instance compatible with the project's types.
 
-        This mirrors the shape produced by the project's `MockGAService` but is
+        This mirrors the shape produced by the project's `GA_Service` but is
         kept local so the results page can be previewed in isolation.
         """
         import random
