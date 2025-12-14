@@ -81,7 +81,7 @@ class GA_Service(GAInterface):
             beta=params.ga_parameters.beta,
         )
 
-        result:Merged_GA = new_Ga.master_run(num_runs=20) # type: ignore
+        result:Merged_GA = new_Ga.master_run(num_runs=2) # type: ignore
 
         print(result)
 

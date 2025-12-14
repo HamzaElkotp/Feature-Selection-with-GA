@@ -1,163 +1,194 @@
 import ttkbootstrap as ttk
 import tkinter as tk
+from ttkbootstrap.constants import *
 
-from interfaces.types import RunGAResult, Generations, Genome
-from typing import Dict, List, Tuple
+from typing import List, Dict
+from core.GA_functions import Chromosome, Merged_Generation, Merged_GA
 
+# ------------------ Matplotlib setup ------------------
 try:
-    # Matplotlib for plotting within Tkinter
     import matplotlib
-    matplotlib.use("Agg")  # use a non-interactive backend for headless environments
+    matplotlib.use("Agg")
     from matplotlib.figure import Figure
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     HAS_MATPLOTLIB = True
 except Exception:
     HAS_MATPLOTLIB = False
 
-from core.GA_functions import (
-# Types
-Merged_GA
-)
 
-
+# =====================================================
+# Results Page
+# =====================================================
 class ResultsPage(ttk.Frame):
-    """Show GA results including a simple plot of best fitness per generation.
-
-    If `results` is None, a mock RunGAResult is generated for demo purposes.
-    """
 
     def __init__(self, master, results: Merged_GA):
         super().__init__(master)
+        self.results = results
 
-        ttk.Label(self, text="Results", font=("Helvetica", 16, "bold")).pack(pady=12)
+        ttk.Label(self, text="GA Results", font=("Helvetica", 18, "bold")).pack(pady=10)
 
-        # If no real results were supplied, build mock data
-        if results is None:
-            results = self._build_mock_result()
+        # ---- Layout containers ----
+        top = ttk.Frame(self)
+        top.pack(fill=BOTH, expand=True)
 
-        # Show best-genome summary on the left
-        left = ttk.Frame(self)
-        left.pack(side="left", fill="both", expand=True, padx=10, pady=10)
-
-        ttk.Label(left, text="Best Genome", font=("Helvetica", 12, "bold")).pack(anchor="w")
-        best = results.best_genome
-        best_text = tk.Text(left, height=10, width=40)
-        best_text.pack(padx=6, pady=6)
-        best_text.insert("end", self._format_genome(best))
-        best_text.configure(state="disabled")
-
-        # Suggested features based on all generations (weighted by fitness)
-        ttk.Label(left, text="Suggested Features", font=("Helvetica", 12, "bold")).pack(anchor="w", pady=(8, 0))
-        suggested = self._suggest_best_features(results.generations, top_n=10)
-        sug_text = tk.Text(left, height=8, width=40)
-        sug_text.pack(padx=6, pady=6)
-        for feat, score in suggested:
-            sug_text.insert("end", f"{feat}: {score:.4f}\n")
-        sug_text.configure(state="disabled")
-
-        ttk.Button(left, text="Back to Start", command=master.show_start_page).pack(pady=6)
-
-        # Plot area on the right
-        right = ttk.Frame(self)
-        right.pack(side="right", fill="both", expand=True, padx=10, pady=10)
-
-        ttk.Label(right, text="Fitness over Generations", font=("Helvetica", 12, "bold")).pack()
+        bottom = ttk.Frame(self)
+        bottom.pack(fill=BOTH, expand=True, pady=10)
 
         if HAS_MATPLOTLIB:
-            fig = Figure(figsize=(6, 3.6), dpi=100)
-            ax = fig.add_subplot(111)
-            gens, bests = self._best_fitness_by_generation(results.generations)
-            _, avgs = self._average_fitness_by_generation(results.generations)
-
-            ax.plot(gens, bests, marker="o", linestyle="-", color="#1f77b4", label="Best Fitness")
-            ax.plot(gens, avgs, marker="s", linestyle="--", color="#ff7f0e", label="Average Fitness")
-            ax.set_xlabel("Generation")
-            ax.set_ylabel("Fitness")
-            ax.grid(True, linestyle="--", alpha=0.4)
-            ax.legend()
-
-            canvas = FigureCanvasTkAgg(fig, master=right)
-            canvas.draw()
-            canvas.get_tk_widget().pack(fill="both", expand=True, padx=6, pady=6)
+            self._build_plots(top)
         else:
-            ttk.Label(right, text="Matplotlib not available. Install matplotlib to see plots.").pack(padx=6, pady=20)
+            ttk.Label(top, text="Matplotlib is not available").pack()
 
-    def _format_genome(self, genome: Genome) -> str:
-        lines = [f"id: {genome.get('id')}", f"fitness: {genome.get('fitness'):.4f}", f"accuracy: {genome.get('accuracy'):.4f}", "features:"]
-        for f in genome.get("features", []):
-            lines.append(f"  - {f}")
-        return "\n".join(lines)
+        self._build_tables(bottom)
 
-    def _best_fitness_by_generation(self, generations: Generations) -> tuple[List[int], List[float]]:
-        gens = []
-        bests = []
-        for g in sorted(generations.keys()):
-            gen_list = generations[g]
-            best_fit = max((item.get("fitness", 0.0) for item in gen_list), default=0.0)
-            gens.append(g)
-            bests.append(best_fit)
-        return gens, bests
+    # =====================================================
+    # -------------------- PLOTS --------------------------
+    # =====================================================
+    def _build_plots(self, parent: ttk.Frame):
 
-    def _average_fitness_by_generation(self, generations: Generations) -> tuple[List[int], List[float]]:
-        gens = []
-        avgs = []
-        for g in sorted(generations.keys()):
-            gen_list = generations[g]
-            if not gen_list:
-                avg = 0.0
-            else:
-                total = sum((item.get("fitness", 0.0) for item in gen_list))
-                avg = total / len(gen_list)
-            gens.append(g)
-            avgs.append(avg)
-        return gens, avgs
+        fig = Figure(figsize=(11, 8), dpi=100)
 
-    def _suggest_best_features(self, generations: Generations, top_n: int = 10) -> List[Tuple[str, float]]:
-        """Return top features ranked by weighted fitness across all generations.
+        ax1 = fig.add_subplot(221)
+        ax2 = fig.add_subplot(222)
+        ax3 = fig.add_subplot(223)
+        ax4 = fig.add_subplot(224)
 
-        We weight each occurrence of a feature by the genome's fitness so that
-        frequently high-fitness features bubble to the top. Returns a list of
-        (feature, score) tuples sorted descending by score.
+        gens = list(range(len(self.results)))
+
+        gen_sizes = [g["gen_size"] for g in self.results]
+        best_fitness = [g["best_chromosome"]["fitness"] for g in self.results]
+        worst_fitness = [g["worst_chromosome"]["fitness"] for g in self.results]
+        avg_fitness = [g["average_generations_fitness"] for g in self.results]
+
+        ones_count = [sum(g["best_chromosome"]["bit_string"]) for g in self.results]
+
+        # ---- Plot 1: Generation size ----
+        ax1.plot(gens, gen_sizes, marker="o")
+        ax1.set_title("Generation Size")
+        ax1.set_xlabel("Generation")
+        ax1.set_ylabel("Size")
+        ax1.grid(True, alpha=0.4)
+
+        # ---- Plot 2: Fitness comparison ----
+        ax2.plot(gens, best_fitness, label="Best Fitness")
+        ax2.plot(gens, worst_fitness, label="Worst Fitness")
+        ax2.plot(gens, avg_fitness, label="Average Fitness")
+        ax2.set_title("Fitness Across Generations")
+        ax2.set_xlabel("Generation")
+        ax2.set_ylabel("Fitness")
+        ax2.legend()
+        ax2.grid(True, alpha=0.4)
+
+        # ---- Plot 3: Number of 1s in best chromosome ----
+        ax3.plot(gens, ones_count, marker="o")
+        stable_ones = self._find_stable_point(ones_count)
+        if stable_ones is not None:
+            ax3.axvline(stable_ones, linestyle="--", alpha=0.7)
+
+        ax3.set_title("Number of Selected Features in Best Chromosome")
+        ax3.set_xlabel("Generation")
+        ax3.set_ylabel("Count of Features")
+        ax3.grid(True, alpha=0.4)
+
+        # ---- Plot 4: Best fitness stabilization ----
+        ax4.plot(gens, best_fitness, marker="o")
+        stable_fitness = self._find_stable_point(best_fitness)
+        if stable_fitness is not None:
+            ax4.axvline(stable_fitness, linestyle="--", alpha=0.7)
+
+        ax4.set_title("Best Fitness Stabilization")
+        ax4.set_xlabel("Generation")
+        ax4.set_ylabel("Fitness")
+        ax4.grid(True, alpha=0.4)
+
+        canvas = FigureCanvasTkAgg(fig, master=parent)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+    # =====================================================
+    # -------------------- TABLES -------------------------
+    # =====================================================
+    def _build_tables(self, parent: ttk.Frame):
+
+        left = ttk.Frame(parent)
+        left.pack(side=LEFT, fill=BOTH, expand=True, padx=5)
+
+        right = ttk.Frame(parent)
+        right.pack(side=RIGHT, fill=BOTH, expand=True, padx=5)
+
+        # ---------- Table 1: Best 10 chromosomes ----------
+        ttk.Label(left, text="Top 10 Best Chromosomes", font=("Helvetica", 12, "bold")).pack(pady=5)
+
+        cols = ("Generation", "Fitness", "Number of Selected Features", "Selected Features")
+        table1 = ttk.Treeview(left, columns=cols, show="headings", height=10)
+
+        for c in cols:
+            table1.heading(c, text=c)
+            table1.column(c, anchor=CENTER)
+
+        table1.pack(fill=BOTH, expand=True)
+
+        all_best = [
+            (i, g["best_chromosome"])
+            for i, g in enumerate(self.results)
+        ]
+
+        top10 = sorted(all_best, key=lambda x: x[1]["fitness"], reverse=True)[:10]
+
+        for gen_idx, chrom in top10:
+            table1.insert(
+                "",
+                END,
+                values=(
+                    gen_idx,
+                    round(chrom["fitness"], 5),
+                    sum(chrom["bit_string"]),
+                    self._decode_chromosome(chrom["bit_string"]),
+                ),
+            )
+
+        # ---------- Table 2: Index contribution ----------
+        ttk.Label(right, text="Feature Contribution (Best Chromosomes)", font=("Helvetica", 12, "bold")).pack(pady=5)
+
+        table2 = ttk.Treeview(right, columns=("Feature", "Number of usage"), show="headings", height=10)
+        table2.heading("Feature", text="Feature")
+        table2.heading("Number of usage", text="Number of usage")
+
+        table2.column("Number of usage", anchor=CENTER)
+        table2.column("Number of usage", anchor=CENTER)
+
+        table2.pack(fill=BOTH, expand=True)
+
+        index_scores = self._bit_index_statistics()
+
+        for idx, count in index_scores.items():
+            table2.insert("", END, values=(idx, count))
+
+    # =====================================================
+    # -------------------- HELPERS ------------------------
+    # =====================================================
+    def _find_stable_point(self, values: List[float]):
+        """Return index where values stop changing."""
+        for i in range(1, len(values)):
+            if all(values[j] == values[i] for j in range(i, len(values))):
+                return i
+        return None
+
+    def _decode_chromosome(self, bit_string: List[int]) -> float:
         """
-        scores: Dict[str, float] = {}
-        for gen_list in generations.values():
-            for genome in gen_list:
-                fitness = float(genome.get("fitness", 0.0) or 0.0)
-                for feat in genome.get("features", []):
-                    scores[feat] = scores.get(feat, 0.0) + fitness
-
-        sorted_feats = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
-        return sorted_feats[:top_n]
-
-    def _build_mock_result(self) -> RunGAResult:
-        """Return a mock RunGAResult instance compatible with the project's types.
-
-        This mirrors the shape produced by the project's `GA_Service` but is
-        kept local so the results page can be previewed in isolation.
+        Placeholder decoding logic.
+        Replace later with real decoder.
         """
-        import random
+        return sum(bit_string)
 
-        generations: Generations = {}
-        num_generations = 8
-        for gen in range(num_generations):
-            genomes = []
-            for i in range(6):
-                genome = {
-                    "parent_id": random.randint(0, 5),
-                    "id": gen * 100 + i,
-                    "fitness": random.uniform(0.0, 1.0),
-                    "accuracy": random.uniform(0.6, 0.98),
-                    "features": [f"feature_{k}" for k in random.sample(range(30), random.randint(4, 12))],
-                }
-                genomes.append(genome)
-            generations[gen] = genomes
+    def _bit_index_statistics(self) -> Dict[int, int]:
+        """Count how many times each bit index is 1 across all best chromosomes."""
+        stats: Dict[int, int] = {}
 
-        last_gen = generations[num_generations - 1]
-        best_genome = max(last_gen, key=lambda g: g["fitness"])
+        for g in self.results:
+            bits = g["best_chromosome"]["bit_string"]
+            for idx, val in enumerate(bits):
+                if val == 1:
+                    stats[idx] = stats.get(idx, 0) + 1
 
-        result = RunGAResult()
-        result.best_genome = best_genome
-        result.generations = generations
-        return result
-
-    # Note: input-data viewing removed — this page no longer shows AppContext data.
+        return dict(sorted(stats.items()))
