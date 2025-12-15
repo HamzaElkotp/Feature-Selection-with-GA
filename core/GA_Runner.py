@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from config.settings import GPU_AVAILABLE, USE_GPU
 
 from core.GA_functions import (
 # Types
@@ -104,8 +105,11 @@ class GA:
         # Store all generations
         generations:[Generation] = []
 
+        # Determine if GPU should be used
+        use_gpu = USE_GPU and GPU_AVAILABLE
+        
         population = self.initiate_population(self.population_size, self.num_features)
-        last_generated_population:Population = self.compute_generation_fitness(population, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta)
+        last_generated_population:Population = self.compute_generation_fitness(population, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta, use_gpu=use_gpu)
         last_generated_population = Descending_order_fitnesses(last_generated_population)
 
         generations.append(extract_gen_info(last_generated_population))
@@ -121,18 +125,18 @@ class GA:
             # Select parents from old generation
             selected_parents: Population = self.selection(last_generated_population, num_of_combinations_needed)
             # Marriage parents with each others and get unique children
-            new_children = self.crossover(selected_parents, self.crossover_k_points)
+            new_children = self.crossover(selected_parents, self.crossover_k_points, use_gpu=use_gpu)
 
             # Do mutation from old generation and push them to the new
             mutation_number = max(math.ceil(len(last_generated_population) * self.mutation_percent / 100), 1)
-            mutated = self.mutation(last_generated_population, mutation_number)
+            mutated = self.mutation(last_generated_population, mutation_number, use_gpu=use_gpu)
             new_children.extend(mutated)
 
             # Make sure new generation children are all unique (Optimization before compute fitness)
             new_children = unique_list(new_children)
 
             # Compute fitness of children
-            new_children_with_fitness: Population = self.compute_generation_fitness(new_children, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta)
+            new_children_with_fitness: Population = self.compute_generation_fitness(new_children, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta, use_gpu=use_gpu)
 
             # Do elitism from old generation and push them to the new
             elitism_number = max(math.ceil(len(last_generated_population) * self.elitism_percent / 100), 1)

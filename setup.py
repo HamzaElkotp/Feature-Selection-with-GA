@@ -11,8 +11,17 @@ setup(
         "ttkbootstrap",
         "ttkbootstrap-icons",
         "pydantic",
-        "pathlib"
+        "pathlib",
+        "scikit-learn",  # Explicitly include sklearn
     ],
+    extras_require={
+        "gpu": [
+            "cupy-cuda11x>=12.0.0",  # GPU acceleration for CUDA 11.x (RTX 3050 compatible)
+        ],
+        "gpu-cuda12": [
+            "cupy-cuda12x>=12.0.0",  # GPU acceleration for CUDA 12.x
+        ],
+    },
     entry_points={
         "console_scripts": [
             "start-app = main:main",  # allows running "start-app" from terminal

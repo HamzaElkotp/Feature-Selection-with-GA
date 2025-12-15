@@ -5,6 +5,18 @@ import array
 from sklearn.model_selection import cross_val_score
 from sklearn.tree import DecisionTreeClassifier
 from typing import TypedDict, List
+from config.settings import GPU_AVAILABLE, USE_GPU
+
+# Try to import CuPy for GPU acceleration
+try:
+    import cupy as cp
+    CUPY_AVAILABLE = True
+except ImportError:
+    CUPY_AVAILABLE = False
+    cp = None
+except Exception:
+    CUPY_AVAILABLE = False
+    cp = None
 
 
 class Chromosome(TypedDict):
@@ -90,7 +102,22 @@ def compute_fitness(chromosome, dataset_features, prediction_target, alpha=1, be
     return fitness_value
 
 
-def get_population_fitness(_population, dataset_features, prediction_target, alpha=1, beta=1) -> Population:
+def get_population_fitness(_population, dataset_features, prediction_target, alpha=1, beta=1, use_gpu=None) -> Population:
+    """
+    Compute fitness for entire population.
+    If GPU is available and enabled, uses GPU-accelerated batch processing.
+    """
+    if use_gpu is None:
+        use_gpu = USE_GPU and GPU_AVAILABLE and CUPY_AVAILABLE
+    
+    if use_gpu:
+        return get_population_fitness_gpu(_population, dataset_features, prediction_target, alpha, beta)
+    else:
+        return get_population_fitness_cpu(_population, dataset_features, prediction_target, alpha, beta)
+
+
+def get_population_fitness_cpu(_population, dataset_features, prediction_target, alpha=1, beta=1) -> Population:
+    """CPU-based fitness computation (original implementation)."""
     population_with_fitness:Population = []
 
     for chrom in _population:
@@ -98,6 +125,61 @@ def get_population_fitness(_population, dataset_features, prediction_target, alp
         chrom = Chromosome(bit_string=chrom, fitness=fitness)
         population_with_fitness.append(chrom)
 
+    return population_with_fitness
+
+
+def get_population_fitness_gpu(_population, dataset_features, prediction_target, alpha=1, beta=1) -> Population:
+    """
+    GPU-accelerated fitness computation using CuPy for batch processing.
+    Note: ML models still run on CPU, but array operations are GPU-accelerated.
+    """
+    if cp is None:
+        # Fallback to CPU if CuPy is not available
+        return get_population_fitness_cpu(_population, dataset_features, prediction_target, alpha, beta)
+    
+    population_with_fitness:Population = []
+    
+    # Convert dataset to GPU arrays for faster indexing
+    try:
+        features_array_gpu = cp.asarray(dataset_features.values, dtype=cp.float32)
+        target_array_gpu = cp.asarray(prediction_target.values, dtype=cp.float32)
+    except Exception:
+        # If GPU operations fail, fall back to CPU
+        return get_population_fitness_cpu(_population, dataset_features, prediction_target, alpha, beta)
+    
+    # Process in batches for better GPU utilization
+    batch_size = min(32, len(_population))  # Process 32 chromosomes at a time
+    
+    for i in range(0, len(_population), batch_size):
+        batch = _population[i:i+batch_size]
+        
+        for chrom in batch:
+            # Use GPU for array operations
+            chrom_gpu = cp.asarray(chrom, dtype=cp.int32)
+            selected_indices = cp.where(chrom_gpu == 1)[0]
+            
+            if len(selected_indices) == 0:
+                # Invalid chromosome, assign low fitness
+                fitness = -1.0
+            else:
+                # Convert back to CPU for sklearn (sklearn doesn't support GPU)
+                selected_indices_cpu = cp.asnumpy(selected_indices)
+                dataset_features_selected = dataset_features.iloc[:, selected_indices_cpu]
+                
+                # Compute accuracy (still CPU-based for sklearn)
+                model = DecisionTreeClassifier()
+                accuracy = np.mean(cross_val_score(model, dataset_features_selected, prediction_target, cv=3))
+                
+                # Compute fitness
+                features_total = len(chrom)
+                features_selected = len(selected_indices_cpu)
+                penalty = beta * (features_selected / features_total)
+                reward = alpha * accuracy
+                fitness = float(reward - penalty)
+            
+            chrom_dict = Chromosome(bit_string=chrom, fitness=fitness)
+            population_with_fitness.append(chrom_dict)
+    
     return population_with_fitness
 
 
@@ -273,7 +355,19 @@ def k_points_crossover(parent1, parent2, k):
 
     return child1, child2
 
-def population_k_point_crossover(population: Population, k): # do cross-over and return unique children
+def population_k_point_crossover(population: Population, k, use_gpu=None): # do cross-over and return unique children
+    """Crossover with optional GPU acceleration."""
+    if use_gpu is None:
+        use_gpu = USE_GPU and GPU_AVAILABLE and CUPY_AVAILABLE
+    
+    if use_gpu and len(population) > 10:  # Use GPU for larger populations
+        return population_k_point_crossover_gpu(population, k)
+    else:
+        return population_k_point_crossover_cpu(population, k)
+
+
+def population_k_point_crossover_cpu(population: Population, k): # do cross-over and return unique children
+    """CPU-based crossover (original implementation)."""
     new_children = []
     seen = set()
 
@@ -296,6 +390,65 @@ def population_k_point_crossover(population: Population, k): # do cross-over and
                 seen.add(key)
                 new_children.append(child2)
 
+    return new_children
+
+
+def population_k_point_crossover_gpu(population: Population, k):
+    """GPU-accelerated batch crossover using CuPy."""
+    if cp is None:
+        # Fallback to CPU if CuPy is not available
+        return population_k_point_crossover_cpu(population, k)
+    
+    new_children = []
+    seen = set()
+    
+    # Process pairs in batches on GPU
+    num_pairs = len(population) // 2
+    
+    for pair_idx in range(num_pairs):
+        i = pair_idx * 2
+        if i + 1 >= len(population):
+            break
+            
+        parent1 = cp.asarray(population[i]["bit_string"], dtype=cp.int32)
+        parent2 = cp.asarray(population[i + 1]["bit_string"], dtype=cp.int32)
+        
+        # Generate crossover points
+        chromo_len = len(parent1)
+        points = sorted(random.sample(range(1, chromo_len - 1), min(k, chromo_len - 2)))
+        points = [0] + points + [chromo_len]
+        
+        # Create masks for crossover segments
+        child1_gpu = cp.zeros_like(parent1)
+        child2_gpu = cp.zeros_like(parent2)
+        
+        for seg_idx in range(len(points) - 1):
+            start = points[seg_idx]
+            end = points[seg_idx + 1]
+            
+            if seg_idx % 2 == 0:
+                child1_gpu[start:end] = parent1[start:end]
+                child2_gpu[start:end] = parent2[start:end]
+            else:
+                child1_gpu[start:end] = parent2[start:end]
+                child2_gpu[start:end] = parent1[start:end]
+        
+        # Convert back to CPU and validate
+        child1 = cp.asnumpy(child1_gpu).tolist()
+        child2 = cp.asnumpy(child2_gpu).tolist()
+        
+        if validate_bitstring_chromosome(child1):
+            key = tuple(child1)
+            if key not in seen:
+                seen.add(key)
+                new_children.append(child1)
+
+        if validate_bitstring_chromosome(child2):
+            key = tuple(child2)
+            if key not in seen:
+                seen.add(key)
+                new_children.append(child2)
+    
     return new_children
 
 
@@ -325,10 +478,55 @@ def bit_flip_mutation(chromo):
         chromo[r] = 1
     return chromo
 
-def bit_flip_mutator(population: Population, k: int):
+def bit_flip_mutator(population: Population, k: int, use_gpu=None):
+    """Bit flip mutation with optional GPU acceleration."""
+    if use_gpu is None:
+        use_gpu = USE_GPU and GPU_AVAILABLE and CUPY_AVAILABLE
+    
+    if use_gpu and k > 5:
+        return bit_flip_mutator_gpu(population, k)
+    else:
+        return bit_flip_mutator_cpu(population, k)
+
+
+def bit_flip_mutator_cpu(population: Population, k: int):
+    """CPU-based bit flip mutation (original implementation)."""
     new_chromos = []
     for i in range(k):
         new_chromos.append(bit_flip_mutation(population[i]["bit_string"]))
+    return new_chromos
+
+
+def bit_flip_mutator_gpu(population: Population, k: int):
+    """GPU-accelerated batch bit flip mutation."""
+    if cp is None:
+        # Fallback to CPU if CuPy is not available
+        return bit_flip_mutator_cpu(population, k)
+    
+    new_chromos = []
+    
+    # Process in batches on GPU
+    batch_size = min(32, k)
+    for i in range(0, k, batch_size):
+        batch_end = min(i + batch_size, k)
+        batch_indices = list(range(i, batch_end))
+        
+        # Convert batch to GPU array
+        batch_chromos = [population[idx]["bit_string"] for idx in batch_indices]
+        batch_array = cp.asarray(batch_chromos, dtype=cp.int32)
+        
+        # Generate random flip positions for each chromosome
+        chromo_len = len(batch_chromos[0])
+        flip_positions = cp.random.randint(0, chromo_len, size=(len(batch_indices),))
+        
+        # Perform bit flips using GPU array operations
+        for j, pos in enumerate(flip_positions):
+            batch_array[j, pos] = 1 - batch_array[j, pos]
+        
+        # Convert back to CPU
+        mutated_batch = cp.asnumpy(batch_array).tolist()
+        new_chromos.extend(mutated_batch)
+    
     return new_chromos
 
 #Complement
@@ -342,10 +540,47 @@ def Complement_mutation(chromo):
             chromo[i] = 1
     return chromo
 
-def complement_mutator(population: Population, k: int):
+def complement_mutator(population: Population, k: int, use_gpu=None):
+    """Complement mutation with optional GPU acceleration."""
+    if use_gpu is None:
+        use_gpu = USE_GPU and GPU_AVAILABLE and CUPY_AVAILABLE
+    
+    if use_gpu and k > 5:
+        return complement_mutator_gpu(population, k)
+    else:
+        return complement_mutator_cpu(population, k)
+
+
+def complement_mutator_cpu(population: Population, k: int):
+    """CPU-based complement mutation (original implementation)."""
     new_chromos = []
     for i in range(k):
         new_chromos.append(Complement_mutation(population[i]["bit_string"]))
+    return new_chromos
+
+
+def complement_mutator_gpu(population: Population, k: int):
+    """GPU-accelerated batch complement mutation."""
+    if cp is None:
+        # Fallback to CPU if CuPy is not available
+        return complement_mutator_cpu(population, k)
+    
+    new_chromos = []
+    
+    # Process in batches on GPU
+    batch_size = min(32, k)
+    for i in range(0, k, batch_size):
+        batch_end = min(i + batch_size, k)
+        batch_chromos = [population[idx]["bit_string"] for idx in range(i, batch_end)]
+        
+        # Convert to GPU array and complement (1 - array)
+        batch_array = cp.asarray(batch_chromos, dtype=cp.int32)
+        batch_array = 1 - batch_array  # Vectorized complement operation
+        
+        # Convert back to CPU
+        mutated_batch = cp.asnumpy(batch_array).tolist()
+        new_chromos.extend(mutated_batch)
+    
     return new_chromos
 
 #reverse
@@ -358,10 +593,47 @@ def reverse_mutation(chromo):
     offspring1 = temp_offspring1
     return offspring1
 
-def reverse_mutator(population: Population, k: int):
+def reverse_mutator(population: Population, k: int, use_gpu=None):
+    """Reverse mutation with optional GPU acceleration."""
+    if use_gpu is None:
+        use_gpu = USE_GPU and GPU_AVAILABLE and CUPY_AVAILABLE
+    
+    if use_gpu and k > 5:
+        return reverse_mutator_gpu(population, k)
+    else:
+        return reverse_mutator_cpu(population, k)
+
+
+def reverse_mutator_cpu(population: Population, k: int):
+    """CPU-based reverse mutation (original implementation)."""
     new_chromos = []
     for i in range(k):
         new_chromos.append(reverse_mutation(population[i]["bit_string"]))
+    return new_chromos
+
+
+def reverse_mutator_gpu(population: Population, k: int):
+    """GPU-accelerated batch reverse mutation."""
+    if cp is None:
+        # Fallback to CPU if CuPy is not available
+        return reverse_mutator_cpu(population, k)
+    
+    new_chromos = []
+    
+    # Process in batches on GPU
+    batch_size = min(32, k)
+    for i in range(0, k, batch_size):
+        batch_end = min(i + batch_size, k)
+        batch_chromos = [population[idx]["bit_string"] for idx in range(i, batch_end)]
+        
+        # Convert to GPU array and reverse using flip
+        batch_array = cp.asarray(batch_chromos, dtype=cp.int32)
+        batch_array = cp.flip(batch_array, axis=1)  # Reverse along chromosome axis
+        
+        # Convert back to CPU
+        mutated_batch = cp.asnumpy(batch_array).tolist()
+        new_chromos.extend(mutated_batch)
+    
     return new_chromos
 
 # Rotation
@@ -376,10 +648,54 @@ def Rotation_mutation(chromo):
     offspring = temp_offspring
     return offspring
 
-def rotation_mutator(population: Population, k: int):
+def rotation_mutator(population: Population, k: int, use_gpu=None):
+    """Rotation mutation with optional GPU acceleration."""
+    if use_gpu is None:
+        use_gpu = USE_GPU and GPU_AVAILABLE and CUPY_AVAILABLE
+    
+    if use_gpu and k > 5:
+        return rotation_mutator_gpu(population, k)
+    else:
+        return rotation_mutator_cpu(population, k)
+
+
+def rotation_mutator_cpu(population: Population, k: int):
+    """CPU-based rotation mutation (original implementation)."""
     new_chromos = []
     for i in range(k):
         new_chromos.append(Rotation_mutation(population[i]["bit_string"]))
+    return new_chromos
+
+
+def rotation_mutator_gpu(population: Population, k: int):
+    """GPU-accelerated batch rotation mutation."""
+    if cp is None:
+        # Fallback to CPU if CuPy is not available
+        return rotation_mutator_cpu(population, k)
+    
+    new_chromos = []
+    
+    # Process in batches on GPU
+    batch_size = min(32, k)
+    for i in range(0, k, batch_size):
+        batch_end = min(i + batch_size, k)
+        batch_chromos = [population[idx]["bit_string"] for idx in range(i, batch_end)]
+        
+        # Convert to GPU array
+        batch_array = cp.asarray(batch_chromos, dtype=cp.int32)
+        chromo_len = len(batch_chromos[0])
+        
+        # Generate random rotation amounts for each chromosome
+        rotations = cp.random.randint(1, chromo_len, size=(len(batch_chromos),))
+        
+        # Apply rotations using GPU array operations
+        for j, rot in enumerate(rotations):
+            batch_array[j] = cp.roll(batch_array[j], int(rot))
+        
+        # Convert back to CPU
+        mutated_batch = cp.asnumpy(batch_array).tolist()
+        new_chromos.extend(mutated_batch)
+    
     return new_chromos
 
 
