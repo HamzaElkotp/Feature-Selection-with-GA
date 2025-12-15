@@ -116,10 +116,16 @@ class ResultsPage(ttk.Frame):
         row1.pack(fill=BOTH, expand=True, pady=(0, 15))
 
         row2 = ttk.Frame(parent)
-        row2.pack(fill=BOTH, expand=True, pady=(0, 15))
+        row2.pack(fill=BOTH, expand=True, pady=(0, 25))
 
         row3 = ttk.Frame(parent)
-        row3.pack(fill=BOTH, expand=True, pady=(0, 25))
+        row3.pack(fill=BOTH, expand=True, pady=(0, 35))
+
+        row4 = ttk.Frame(parent)
+        row4.pack(fill=BOTH, expand=True, pady=(0, 45))
+
+        row5 = ttk.Frame(parent)
+        row5.pack(fill=BOTH, expand=True, pady=(0, 55))
 
         # ----- Plot 1: Generation Size -----
         fig1 = Figure(figsize=(12, 4), dpi=100)
@@ -143,7 +149,7 @@ class ResultsPage(ttk.Frame):
         ax2.set_ylabel("Fitness")
         ax2.legend()
         ax2.grid(True, alpha=0.4)
-        canvas2 = FigureCanvasTkAgg(fig2, master=row1)
+        canvas2 = FigureCanvasTkAgg(fig2, master=row2)
         canvas2.draw()
         canvas2.get_tk_widget().pack(side=LEFT, fill=BOTH, expand=True, padx=5)
 
@@ -155,7 +161,7 @@ class ResultsPage(ttk.Frame):
         ax3.set_xlabel("Generation")
         ax3.set_ylabel("Average Fitness")
         ax3.grid(True, alpha=0.4)
-        canvas3 = FigureCanvasTkAgg(fig3, master=row2)
+        canvas3 = FigureCanvasTkAgg(fig3, master=row3)
         canvas3.draw()
         canvas3.get_tk_widget().pack(side=LEFT, fill=BOTH, expand=True, padx=5)
 
@@ -170,7 +176,7 @@ class ResultsPage(ttk.Frame):
         ax4.set_xlabel("Generation")
         ax4.set_ylabel("Feature Count")
         ax4.grid(True, alpha=0.4)
-        canvas4 = FigureCanvasTkAgg(fig4, master=row2)
+        canvas4 = FigureCanvasTkAgg(fig4, master=row4)
         canvas4.draw()
         canvas4.get_tk_widget().pack(side=LEFT, fill=BOTH, expand=True, padx=5)
 
@@ -185,7 +191,7 @@ class ResultsPage(ttk.Frame):
         ax5.set_xlabel("Generation")
         ax5.set_ylabel("Fitness")
         ax5.grid(True, alpha=0.4)
-        canvas5 = FigureCanvasTkAgg(fig5, master=row3)
+        canvas5 = FigureCanvasTkAgg(fig5, master=row5)
         canvas5.draw()
         canvas5.get_tk_widget().pack(fill=BOTH, expand=True, padx=5)
 
