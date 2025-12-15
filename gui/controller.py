@@ -1,5 +1,6 @@
 import threading
 from tkinter import messagebox
+from typing import List
 
 from interfaces.types import RunGAParameters, RunGAResult
 from interfaces.enums import RunMode
@@ -30,9 +31,9 @@ class InputController:
     def run_ga(self, run_params: RunGAParameters):
         # Use the ga_service attached to the application (implements GAInterface)
         # Define a completion callback the GA service will call when finished.
-        def on_complete(dt_result: Merged_GA, rf_result: Merged_GA):
+        def on_complete(dt_result: Merged_GA, rf_result: Merged_GA, features:List):
             # Ensure we schedule UI updates on the main/UI thread
-            self.gui_context.after(0, self.gui_context.show_results_page, dt_result, rf_result)
+            self.gui_context.after(0, self.gui_context.show_results_page, dt_result, rf_result, features)
 
         try:
             # Pass the on_complete callback to the GA service. The service

@@ -55,14 +55,16 @@ class ScrollableFrame(ttk.Frame):
 # Results Page
 # =====================================================
 class ResultsPage(ttk.Frame):
-    def __init__(self, master, dt_result: Merged_GA, rf_result: Merged_GA):
+    def __init__(self, master, dt_result: Merged_GA, rf_result: Merged_GA, features:List):
         super().__init__(master)
 
+        print(features)
         print(dt_result)
         print(rf_result)
 
         self.dt_result = dt_result
         self.rf_result = rf_result
+        self.features = features
 
         # Create split view with PanedWindow
         paned = ttk.Panedwindow(self, orient=HORIZONTAL)
@@ -258,7 +260,7 @@ class ResultsPage(ttk.Frame):
 
         # Sort by usage count descending
         for idx, count in sorted(self._bit_index_statistics(result).items(), key=lambda x: x[1], reverse=True):
-            table2.insert("", END, values=(idx, count))
+            table2.insert("", END, values=(self._decode_index(idx), count))
 
     # =====================================================
     # -------------------- HELPERS ------------------------
@@ -269,8 +271,17 @@ class ResultsPage(ttk.Frame):
                 return i
         return None
 
-    def _decode_chromosome(self, bit_string: List[int]) -> float:
-        return sum(bit_string)  # placeholder
+    def _decode_chromosome(self, bit_string: List[int]) -> List[str]:
+        selected_features = [
+            self.features[i]
+            for i, bit in enumerate(bit_string)
+            if bit == 1
+        ]
+
+        return ", ".join(selected_features)
+    
+    def _decode_index(self, index:int) -> str:
+        return self.features[index]
 
     def _bit_index_statistics(self, result: Merged_GA) -> Dict[int, int]:
         stats: Dict[int, int] = {}

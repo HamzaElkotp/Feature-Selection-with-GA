@@ -1,3 +1,4 @@
+from typing import List
 import ttkbootstrap as ttk
 
 from interfaces.api_contract import GAInterface
@@ -53,9 +54,9 @@ class Application(ttk.Window):
         """Show waiting screen while GA runs."""
         self._switch_page(WaitPage)
 
-    def show_results_page(self, dt_result:Merged_GA, rf_result:Merged_GA):
+    def show_results_page(self, dt_result:Merged_GA, rf_result:Merged_GA, features:List):
         """Show GA results page."""
-        self._switch_page(ResultsPage, dt_result=dt_result, rf_result=rf_result)       
+        self._switch_page(ResultsPage, dt_result=dt_result, rf_result=rf_result, features=features)       
 
 # if __name__ == "__main__":
 #     Application()
