@@ -109,6 +109,7 @@ class GA:
         last_generated_population = Descending_order_fitnesses(last_generated_population)
 
         generations.append(extract_gen_info(last_generated_population))
+        del population  # Free memory
 
         for i in range(self.num_generations):
             # Determine number of parents to select to generate new size that is x1.5
@@ -122,22 +123,26 @@ class GA:
             selected_parents: Population = self.selection(last_generated_population, num_of_combinations_needed)
             # Marriage parents with each others and get unique children
             new_children = self.crossover(selected_parents, self.crossover_k_points)
+            del selected_parents  # Free memory after use
 
             # Do mutation from old generation and push them to the new
             mutation_number = max(math.ceil(len(last_generated_population) * self.mutation_percent / 100), 1)
             mutated = self.mutation(last_generated_population, mutation_number)
             new_children.extend(mutated)
+            del mutated  # Free memory after use
 
             # Make sure new generation children are all unique (Optimization before compute fitness)
             new_children = unique_list(new_children)
 
             # Compute fitness of children
             new_children_with_fitness: Population = self.compute_generation_fitness(new_children, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta, rf=rf)
+            del new_children  # Free memory after computing fitness
 
             # Do elitism from old generation and push them to the new
             elitism_number = max(math.ceil(len(last_generated_population) * self.elitism_percent / 100), 1)
             elites = self.elitism(last_generated_population, elitism_number)
             new_children_with_fitness.extend(elites)
+            del elites  # Free memory after use
 
             # Make sure new generation children are all unique
             new_children_with_fitness = unique_population(new_children_with_fitness)
@@ -145,13 +150,14 @@ class GA:
             # Sort the new Generation
             new_children_with_fitness = Descending_order_fitnesses(new_children_with_fitness)
 
-            # Store Generation
+            # Store Generation (only stores summary, not full population)
             new_gen = extract_gen_info(new_children_with_fitness)
             generations.append(new_gen)
 
-            # print(new_children_with_fitness)
-
+            # Free old population before replacing (only keep current generation)
+            old_population = last_generated_population
             last_generated_population = new_children_with_fitness
+            del old_population  # Explicitly free old population memory
 
         return generations
 
@@ -170,8 +176,11 @@ class GA:
             for future in as_completed(futures):
                 i, result = future.result()
                 all_results[i] = result
+                del future  # Free future reference after processing
 
-        return merge_GAs(all_results, num_runs, self.num_generations)
+        merged_result = merge_GAs(all_results, num_runs, self.num_generations)
+        del all_results  # Free all_results after merging
+        return merged_result
 
 
 # MyGa = GA(
