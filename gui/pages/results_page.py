@@ -61,39 +61,55 @@ class ResultsPage(ttk.Frame):
         print(dt_result)
         print(rf_result)
 
-        scroll = ScrollableFrame(self)
-        scroll.pack(fill=BOTH, expand=True)
-
-        self.container = scroll.scrollable_frame
         self.dt_result = dt_result
+        self.rf_result = rf_result
 
-        # Main content container to ensure full width usage
-        content_frame = ttk.Frame(self.container)
-        content_frame.pack(fill=BOTH, expand=True, padx=10)
+        # Create split view with PanedWindow
+        paned = ttk.Panedwindow(self, orient=HORIZONTAL)
+        paned.pack(fill=BOTH, expand=True)
 
+        # Left side - Single DT
+        left_scroll = ScrollableFrame(paned)
+        paned.add(left_scroll, weight=1)
+        left_container = left_scroll.scrollable_frame
+
+        # Right side - Random Forest
+        right_scroll = ScrollableFrame(paned)
+        paned.add(right_scroll, weight=1)
+        right_container = right_scroll.scrollable_frame
+
+        # Build left side (Single DT)
+        self._build_side(left_container, "Single DT", self.dt_result)
+
+        # Build right side (Random Forest)
+        self._build_side(right_container, "Random Forest", self.rf_result)
+
+    def _build_side(self, parent: ttk.Frame, title: str, result: Merged_GA):
+        """Build plots and tables for one side of the split view"""
+        # Title
         ttk.Label(
-            content_frame,
-            text="GA Results",
+            parent,
+            text=title,
             font=("Helvetica", 18, "bold")
         ).pack(pady=(15, 20))
 
         if HAS_MATPLOTLIB:
-            self._build_plots(content_frame)
+            self._build_plots(parent, result)
         else:
-            ttk.Label(content_frame, text="Matplotlib is not available").pack()
+            ttk.Label(parent, text="Matplotlib is not available").pack()
 
-        self._build_tables(content_frame)
+        self._build_tables(parent, result)
 
     # =====================================================
     # -------------------- PLOTS --------------------------
     # =====================================================
-    def _build_plots(self, parent: ttk.Frame):
-        gens = list(range(len(self.dt_result)))
-        gen_sizes = [g["gen_size"] for g in self.dt_result]
-        best_fitness = [g["best_chromosome"]["fitness"] for g in self.dt_result]
-        worst_fitness = [g["worst_chromosome"]["fitness"] for g in self.dt_result]
-        avg_fitness = [g["average_generations_fitness"] for g in self.dt_result]
-        ones_count = [sum(g["best_chromosome"]["bit_string"]) for g in self.dt_result]
+    def _build_plots(self, parent: ttk.Frame, result: Merged_GA):
+        gens = list(range(len(result)))
+        gen_sizes = [g["gen_size"] for g in result]
+        best_fitness = [g["best_chromosome"]["fitness"] for g in result]
+        worst_fitness = [g["worst_chromosome"]["fitness"] for g in result]
+        avg_fitness = [g["average_generations_fitness"] for g in result]
+        ones_count = [sum(g["best_chromosome"]["bit_string"]) for g in result]
 
         # ----- Row frames for better layout -----
         row1 = ttk.Frame(parent)
@@ -106,7 +122,7 @@ class ResultsPage(ttk.Frame):
         row3.pack(fill=BOTH, expand=True, pady=(0, 25))
 
         # ----- Plot 1: Generation Size -----
-        fig1 = Figure(figsize=(6, 4), dpi=100)
+        fig1 = Figure(figsize=(12, 4), dpi=100)
         ax1 = fig1.add_subplot(111)
         ax1.plot(gens, gen_sizes, marker="o")
         ax1.set_title("Generation Size")
@@ -118,7 +134,7 @@ class ResultsPage(ttk.Frame):
         canvas1.get_tk_widget().pack(side=LEFT, fill=BOTH, expand=True, padx=5)
 
         # ----- Plot 2: Best & Worst Fitness -----
-        fig2 = Figure(figsize=(6, 4), dpi=100)
+        fig2 = Figure(figsize=(12, 4), dpi=100)
         ax2 = fig2.add_subplot(111)
         ax2.plot(gens, best_fitness, label="Best Fitness")
         ax2.plot(gens, worst_fitness, label="Worst Fitness")
@@ -132,7 +148,7 @@ class ResultsPage(ttk.Frame):
         canvas2.get_tk_widget().pack(side=LEFT, fill=BOTH, expand=True, padx=5)
 
         # ----- Plot 3: Average Fitness -----
-        fig3 = Figure(figsize=(6, 4), dpi=100)
+        fig3 = Figure(figsize=(12, 4), dpi=100)
         ax3 = fig3.add_subplot(111)
         ax3.plot(gens, avg_fitness, marker="o", color="orange")
         ax3.set_title("Average Fitness Across Generations")
@@ -144,7 +160,7 @@ class ResultsPage(ttk.Frame):
         canvas3.get_tk_widget().pack(side=LEFT, fill=BOTH, expand=True, padx=5)
 
         # ----- Plot 4: Number of Selected Features -----
-        fig4 = Figure(figsize=(6, 4), dpi=100)
+        fig4 = Figure(figsize=(12, 4), dpi=100)
         ax4 = fig4.add_subplot(111)
         ax4.plot(gens, ones_count, marker="o")
         stable = self._find_stable_point(ones_count)
@@ -176,28 +192,28 @@ class ResultsPage(ttk.Frame):
     # =====================================================
     # -------------------- TABLES -------------------------
     # =====================================================
-    def _build_tables(self, parent: ttk.Frame):
+    def _build_tables(self, parent: ttk.Frame, result: Merged_GA):
         tables_frame = ttk.Frame(parent)
         tables_frame.pack(fill=BOTH, expand=True, padx=10, pady=15)
 
-        # Left table (Top 10 Best)
-        left_frame = ttk.Frame(tables_frame)
-        left_frame.pack(side=LEFT, fill=BOTH, expand=True, padx=(0, 10))
+        # First table (Top 10 Best) - Full width
+        table1_frame = ttk.Frame(tables_frame)
+        table1_frame.pack(fill=BOTH, expand=True, pady=(0, 15))
 
-        ttk.Label(left_frame, text="Top 10 Best Chromosomes", font=("Helvetica", 12, "bold")).pack(pady=5)
+        ttk.Label(table1_frame, text="Top 10 Best Chromosomes", font=("Helvetica", 12, "bold")).pack(pady=5)
 
         cols1 = ("Generation", "Fitness", "Selected Features", "Decoded Value")
-        table1 = ttk.Treeview(left_frame, columns=cols1, show="headings", height=15)
+        table1 = ttk.Treeview(table1_frame, columns=cols1, show="headings", height=15)
         for c in cols1:
             table1.heading(c, text=c)
             table1.column(c, anchor=CENTER)
 
-        vsb1 = ttk.Scrollbar(left_frame, orient=VERTICAL, command=table1.yview)
+        vsb1 = ttk.Scrollbar(table1_frame, orient=VERTICAL, command=table1.yview)
         table1.configure(yscrollcommand=vsb1.set)
         table1.pack(side=LEFT, fill=BOTH, expand=True)
         vsb1.pack(side=RIGHT, fill=Y)
 
-        all_best = [(i, g["best_chromosome"]) for i, g in enumerate(self.dt_result)]
+        all_best = [(i, g["best_chromosome"]) for i, g in enumerate(result)]
         top10 = sorted(all_best, key=lambda x: x[1]["fitness"], reverse=True)[:10]
 
         for gen, chrom in top10:
@@ -212,14 +228,14 @@ class ResultsPage(ttk.Frame):
                 ),
             )
 
-        # Right table (Feature Usage)
-        right_frame = ttk.Frame(tables_frame)
-        right_frame.pack(side=LEFT, fill=Y)
+        # Second table (Feature Usage) - Full width
+        table2_frame = ttk.Frame(tables_frame)
+        table2_frame.pack(fill=BOTH, expand=True)
 
-        ttk.Label(right_frame, text="Feature Usage (Best Chromosomes)", font=("Helvetica", 12, "bold")).pack(pady=5)
+        ttk.Label(table2_frame, text="Feature Usage (Best Chromosomes)", font=("Helvetica", 12, "bold")).pack(pady=5)
 
         table2 = ttk.Treeview(
-            right_frame,
+            table2_frame,
             columns=("Feature Index", "Usage Count"),
             show="headings",
             height=15,
@@ -229,13 +245,13 @@ class ResultsPage(ttk.Frame):
         table2.column("Feature Index", anchor=CENTER)
         table2.column("Usage Count", anchor=CENTER)
 
-        vsb2 = ttk.Scrollbar(right_frame, orient=VERTICAL, command=table2.yview)
+        vsb2 = ttk.Scrollbar(table2_frame, orient=VERTICAL, command=table2.yview)
         table2.configure(yscrollcommand=vsb2.set)
-        table2.pack(side=LEFT, fill=Y)
+        table2.pack(side=LEFT, fill=BOTH, expand=True)
         vsb2.pack(side=RIGHT, fill=Y)
 
         # Sort by usage count descending
-        for idx, count in sorted(self._bit_index_statistics().items(), key=lambda x: x[1], reverse=True):
+        for idx, count in sorted(self._bit_index_statistics(result).items(), key=lambda x: x[1], reverse=True):
             table2.insert("", END, values=(idx, count))
 
     # =====================================================
@@ -250,9 +266,9 @@ class ResultsPage(ttk.Frame):
     def _decode_chromosome(self, bit_string: List[int]) -> float:
         return sum(bit_string)  # placeholder
 
-    def _bit_index_statistics(self) -> Dict[int, int]:
+    def _bit_index_statistics(self, result: Merged_GA) -> Dict[int, int]:
         stats: Dict[int, int] = {}
-        for g in self.dt_result:
+        for g in result:
             for i, v in enumerate(g["best_chromosome"]["bit_string"]):
                 if v == 1:
                     stats[i] = stats.get(i, 0) + 1
