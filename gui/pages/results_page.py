@@ -55,14 +55,17 @@ class ScrollableFrame(ttk.Frame):
 # Results Page
 # =====================================================
 class ResultsPage(ttk.Frame):
-    def __init__(self, master, results: Merged_GA):
+    def __init__(self, master, dt_result: Merged_GA, rf_result: Merged_GA):
         super().__init__(master)
+
+        print(dt_result)
+        print(rf_result)
 
         scroll = ScrollableFrame(self)
         scroll.pack(fill=BOTH, expand=True)
 
         self.container = scroll.scrollable_frame
-        self.results = results
+        self.dt_result = dt_result
 
         # Main content container to ensure full width usage
         content_frame = ttk.Frame(self.container)
@@ -85,12 +88,12 @@ class ResultsPage(ttk.Frame):
     # -------------------- PLOTS --------------------------
     # =====================================================
     def _build_plots(self, parent: ttk.Frame):
-        gens = list(range(len(self.results)))
-        gen_sizes = [g["gen_size"] for g in self.results]
-        best_fitness = [g["best_chromosome"]["fitness"] for g in self.results]
-        worst_fitness = [g["worst_chromosome"]["fitness"] for g in self.results]
-        avg_fitness = [g["average_generations_fitness"] for g in self.results]
-        ones_count = [sum(g["best_chromosome"]["bit_string"]) for g in self.results]
+        gens = list(range(len(self.dt_result)))
+        gen_sizes = [g["gen_size"] for g in self.dt_result]
+        best_fitness = [g["best_chromosome"]["fitness"] for g in self.dt_result]
+        worst_fitness = [g["worst_chromosome"]["fitness"] for g in self.dt_result]
+        avg_fitness = [g["average_generations_fitness"] for g in self.dt_result]
+        ones_count = [sum(g["best_chromosome"]["bit_string"]) for g in self.dt_result]
 
         # ----- Row frames for better layout -----
         row1 = ttk.Frame(parent)
@@ -194,7 +197,7 @@ class ResultsPage(ttk.Frame):
         table1.pack(side=LEFT, fill=BOTH, expand=True)
         vsb1.pack(side=RIGHT, fill=Y)
 
-        all_best = [(i, g["best_chromosome"]) for i, g in enumerate(self.results)]
+        all_best = [(i, g["best_chromosome"]) for i, g in enumerate(self.dt_result)]
         top10 = sorted(all_best, key=lambda x: x[1]["fitness"], reverse=True)[:10]
 
         for gen, chrom in top10:
@@ -249,7 +252,7 @@ class ResultsPage(ttk.Frame):
 
     def _bit_index_statistics(self) -> Dict[int, int]:
         stats: Dict[int, int] = {}
-        for g in self.results:
+        for g in self.dt_result:
             for i, v in enumerate(g["best_chromosome"]["bit_string"]):
                 if v == 1:
                     stats[i] = stats.get(i, 0) + 1

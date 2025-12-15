@@ -30,9 +30,9 @@ class InputController:
     def run_ga(self, run_params: RunGAParameters):
         # Use the ga_service attached to the application (implements GAInterface)
         # Define a completion callback the GA service will call when finished.
-        def on_complete(results: Merged_GA):
+        def on_complete(dt_result: Merged_GA, rf_result: Merged_GA):
             # Ensure we schedule UI updates on the main/UI thread
-            self.gui_context.after(0, self.gui_context.show_results_page, results)
+            self.gui_context.after(0, self.gui_context.show_results_page, dt_result, rf_result)
 
         try:
             # Pass the on_complete callback to the GA service. The service

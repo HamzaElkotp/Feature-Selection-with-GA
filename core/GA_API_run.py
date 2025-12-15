@@ -48,7 +48,7 @@ rotation_mutator,
 
 class GA_Service(GAInterface):
 
-    def run_ga(self, params: RunGAParameters, on_complete: Optional[Callable[[Merged_GA], None]] = None) -> None:
+    def run_ga(self, params: RunGAParameters, on_complete: Optional[Callable[[Merged_GA, Merged_GA], None]] = None) -> None:
         new_Ga = GA(
             initiate_population=initialize_population, # function call
             elitism=elitism_selector, # function call
@@ -81,13 +81,12 @@ class GA_Service(GAInterface):
             beta=params.ga_parameters.beta,
         )
 
-        result:Merged_GA = new_Ga.master_run(num_runs=2) # type: ignore
-
-        print(result)
+        dt_result:Merged_GA = new_Ga.master_run(num_runs=1) # type: ignore
+        rf_result: Merged_GA = new_Ga.master_run(num_runs=1) # type: ignore
 
         # Signal completion via callback if provided
         if on_complete:
             try:
-                on_complete(result)
+                on_complete(dt_result, rf_result)
             except Exception:
                 pass

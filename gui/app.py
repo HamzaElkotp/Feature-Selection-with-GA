@@ -53,9 +53,9 @@ class Application(ttk.Window):
         """Show waiting screen while GA runs."""
         self._switch_page(WaitPage)
 
-    def show_results_page(self, results:Merged_GA):
+    def show_results_page(self, dt_result:Merged_GA, rf_result:Merged_GA):
         """Show GA results page."""
-        self._switch_page(ResultsPage, results=results)       
+        self._switch_page(ResultsPage, dt_result=dt_result, rf_result=rf_result)       
 
 # if __name__ == "__main__":
 #     Application()

@@ -2,6 +2,8 @@ from re import S
 import numpy as np
 import random
 import array
+
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.tree import DecisionTreeClassifier
 from typing import TypedDict, List
@@ -65,20 +67,22 @@ def initialize_population(population_size: int , num_features: int):
 FITNESS FUNCTIONS
 """""""""""""""""""""""""""""""""""""""""
 
-def compute_accuracy(chromosome, dataset_features, prediction_target) -> np.floating:
+def compute_accuracy(chromosome, dataset_features, prediction_target, rf=False) -> np.floating:
     # Decode chromosome to features
     selected_indices = np.where(np.array(chromosome) == 1)[0]
     dataset_features_selected = dataset_features.iloc[:, selected_indices]
-    model = DecisionTreeClassifier()
+
+    model = DecisionTreeClassifier() if not rf else RandomForestClassifier(n_estimators=10, max_depth=None, random_state=42, n_jobs=-1)
+
     accuracy = np.mean(cross_val_score(model, dataset_features_selected, prediction_target, cv=3))
 
     return accuracy
 
 
 # (alpha * accuracy) - (beta * selected / tootal feature)
-def compute_fitness(chromosome, dataset_features, prediction_target, alpha=1, beta=1) -> float:
+def compute_fitness(chromosome, dataset_features, prediction_target, alpha=1, beta=1, rf=False) -> float:
     selected_indices = np.where(np.array(chromosome) == 1)[0]
-    accuracy = compute_accuracy(chromosome, dataset_features, prediction_target)
+    accuracy = compute_accuracy(chromosome, dataset_features, prediction_target, rf)
 
     features_total = len(chromosome)
     features_selected = len(selected_indices)
@@ -90,11 +94,11 @@ def compute_fitness(chromosome, dataset_features, prediction_target, alpha=1, be
     return fitness_value
 
 
-def get_population_fitness(_population, dataset_features, prediction_target, alpha=1, beta=1) -> Population:
+def get_population_fitness(_population, dataset_features, prediction_target, alpha=1, beta=1, rf=False) -> Population:
     population_with_fitness:Population = []
 
     for chrom in _population:
-        fitness = compute_fitness(chrom, dataset_features, prediction_target, alpha, beta)
+        fitness = compute_fitness(chrom, dataset_features, prediction_target, alpha, beta, rf)
         chrom = Chromosome(bit_string=chrom, fitness=fitness)
         population_with_fitness.append(chrom)
 

@@ -96,7 +96,7 @@ class GA:
         self.features = df.drop(columns=[self.result_col_name])
         self.num_features = len(self.features.columns)
 
-    def run(self):
+    def run(self, rf=False):
         self.initiate_dataset()
 
         # validated_inputs(self.dataset_path, self.result_col_name, self.initiate_population, self.features, self.prediction_target)
@@ -105,7 +105,7 @@ class GA:
         generations:[Generation] = []
 
         population = self.initiate_population(self.population_size, self.num_features)
-        last_generated_population:Population = self.compute_generation_fitness(population, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta)
+        last_generated_population:Population = self.compute_generation_fitness(population, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta, rf=rf)
         last_generated_population = Descending_order_fitnesses(last_generated_population)
 
         generations.append(extract_gen_info(last_generated_population))
@@ -132,7 +132,7 @@ class GA:
             new_children = unique_list(new_children)
 
             # Compute fitness of children
-            new_children_with_fitness: Population = self.compute_generation_fitness(new_children, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta)
+            new_children_with_fitness: Population = self.compute_generation_fitness(new_children, self.features, self.prediction_target, alpha=self.alpha, beta=self.beta, rf=rf)
 
             # Do elitism from old generation and push them to the new
             elitism_number = max(math.ceil(len(last_generated_population) * self.elitism_percent / 100), 1)
@@ -156,12 +156,12 @@ class GA:
         return generations
 
 
-    def master_run(self, num_runs, max_workers=min(32, os.cpu_count()))->Merged_GA:
+    def master_run(self, num_runs, max_workers=min(32, os.cpu_count()), rf=False)->Merged_GA:
         all_results = [None] * num_runs
 
         def run_wrapper(i):
             # Runs one GA execution and returns (index, result)
-            res = self.run()
+            res = self.run(rf=rf)
             return i, res
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
